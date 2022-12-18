@@ -1,8 +1,8 @@
 use core::cmp::min;
 use std::collections::BTreeMap;
-use std::env;
-use std::fs;
 use log::debug;
+use crate::construct_graph::{Edge, Graph, GraphNode, INFINITE_DIST};
+use crate::parse_input::get_route;
 
 #[derive(Debug, Clone, PartialEq)]
 struct Node {
@@ -39,10 +39,10 @@ fn get_human_readable_route(
     for node_idx in nodes_in_order {
         let node = &graph_nodes[node_idx];
 
-        if node.index != node_idx {
+        if node.get_index() != node_idx {
             return Err("Error in the indexing for the route travelled.".to_string());
         } else {
-            path_travelled.push(node.node_name.to_string());
+            path_travelled.push(node.get_name().to_string());
         }
     }
     return Ok(path_travelled);
@@ -100,7 +100,7 @@ fn dijkstra(
     let original_start_idx = start_idx;
     let mut parent_idx = start_idx;
 
-    let number_of_nodes = graph.number_of_nodes;
+    let number_of_nodes = graph.get_number_of_nodes();
     //todo: use a binary search tree here to avoid needing to allocate space for the whole vector.
     let mut nodes_visited: Vec<Node> = Vec::with_capacity(number_of_nodes);
     for _ in 0..number_of_nodes {
@@ -112,7 +112,7 @@ fn dijkstra(
 
     while start_idx != end_idx {
 
-        for edge in &graph.edges[start_idx] {
+        for edge in graph.get_edges_from_node(start_idx) {
             add_to_frontier(&mut nodes_can_visit,&nodes_visited, edge, start_idx);
         }
         if nodes_can_visit.is_empty() {
@@ -136,7 +136,7 @@ fn dijkstra(
     return Ok((nodes_visited[end_idx].dist_to_node, nodes_in_order));
 }
 
-fn get_human_readable_solution(
+pub fn get_human_readable_solution(
     route: &str,
     graph_nodes: &Vec<GraphNode>,
     graph: &Graph,
@@ -161,6 +161,9 @@ mod tests {
     use super::*;
     use assert_cmd::Command;
     use predicates::prelude::*;
+    use crate::construct_graph::{construct_graph_from_edges, create_new_edge};
+    use crate::parse_input::get_nodes;
+
     #[test]
     fn test_dijkstra() {
         let start_idx = 0;
@@ -176,10 +179,10 @@ mod tests {
             create_new_edge(2,1, 3),
         ];
 
-        let graph = Graph {
-            number_of_nodes: 3,
-            edges: vec![edges_from_start, edges_from_middle, edges_from_end],
-        };
+        let graph = Graph::new(
+            3,
+            vec![edges_from_start, edges_from_middle, edges_from_end]
+        );
 
         let (dist, _) = dijkstra(start_idx, end_idx, &graph).unwrap();
         assert_eq!(dist, 5);
@@ -200,10 +203,10 @@ mod tests {
             create_new_edge(2, 3, 1)
         ];
 
-        let graph = Graph {
-            number_of_nodes: 3,
-            edges: vec![edges_from_start, edges_from_middle, edges_from_end],
-        };
+        let graph = Graph::new(
+            3,
+            vec![edges_from_start, edges_from_middle, edges_from_end],
+        );
 
         let (dist, _) = dijkstra(start_idx, end_idx, &graph).unwrap();
         assert_eq!(dist, 5);
@@ -220,9 +223,9 @@ mod tests {
 
         let graph_nodes: Vec<GraphNode> = get_nodes(&node_data);
         let graph = construct_graph_from_edges(&graph_nodes, &edge_data).expect("");
-        let expected_graph = Graph {
-            number_of_nodes: 3,
-            edges: vec![
+        let expected_graph = Graph::new(
+            3,
+            vec![
                 vec![
                     create_new_edge(0, 1, 2)
                 ],
@@ -234,7 +237,7 @@ mod tests {
                     create_new_edge(2, 1, 2),
                 ],
             ],
-        };
+        );
         assert_eq!(expected_graph, graph);
         let (dist, _) = dijkstra(0, 2, &graph).unwrap();
         assert_eq!(dist, 4);
@@ -250,10 +253,10 @@ mod tests {
             create_new_edge(1, 2, 3)
         ];
 
-        let graph = Graph {
-            number_of_nodes: 3,
-            edges: vec![edges_from_start, edges_from_middle],
-        };
+        let graph = Graph::new(
+            3,
+            vec![edges_from_start, edges_from_middle],
+        );
 
         let (dist, _) = dijkstra(start_idx, end_idx, &graph).unwrap();
         assert_eq!(dist, 5);

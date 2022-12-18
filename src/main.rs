@@ -1,6 +1,15 @@
-include!("construct_graph.rs");
-include!("find_path.rs");
-include!("parse_input.rs");
+
+
+mod construct_graph;
+mod find_path;
+mod parse_input;
+
+use std::{env, fs};
+use log::debug;
+use crate::construct_graph::{construct_graph_from_edges, GraphNode};
+use crate::find_path::get_human_readable_solution;
+use crate::parse_input::{get_nodes, read_input};
+
 
 fn main() -> Result<(), String> {
     env_logger::init();

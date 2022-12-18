@@ -1,5 +1,7 @@
+use log::debug;
+use crate::construct_graph::{get_node_index_from_node_name, GraphNode};
 
-fn read_input(contents: String) -> Result<(String, String, String), String> {
+pub fn read_input(contents: String) -> Result<(String, String, String), String> {
     let data: Vec<&str> = contents.split("\n\n").collect();
     if data.len() != 3 {
         return Err("Invalid file format.".to_string());
@@ -11,7 +13,7 @@ fn read_input(contents: String) -> Result<(String, String, String), String> {
     return Ok((node_data, edge_data, routes_to_find));
 }
 
-fn get_nodes(node_data: &str) -> Vec<GraphNode> {
+pub fn get_nodes(node_data: &str) -> Vec<GraphNode> {
     let nodes: Vec<&str> = node_data.split("\n").collect();
     let num_nodes: usize = nodes[0]
         .parse::<usize>()
@@ -24,10 +26,10 @@ fn get_nodes(node_data: &str) -> Vec<GraphNode> {
     let mut graph_nodes = Vec::with_capacity(num_nodes);
 
     for i in 1..(num_nodes + 1) {
-        graph_nodes.push(GraphNode {
-            index: i - 1,
-            node_name: nodes[i].to_string(),
-        });
+        graph_nodes.push(GraphNode::new(
+            i - 1,
+            nodes[i].to_string(),
+        ));
     }
 
     debug!("graph nodes: {:?}", graph_nodes);
@@ -35,15 +37,15 @@ fn get_nodes(node_data: &str) -> Vec<GraphNode> {
     return graph_nodes;
 }
 
-fn get_edge_info(
+pub fn get_edge_info(
     edge: &str,
     graph_nodes: &Vec<GraphNode>,
 ) -> Result<(usize, usize, usize), String> {
     let edge_info: Vec<&str> = edge.split(" ").collect();
     if edge_info.len() != 3 {
         return Err(format!(
-            "Route {edge:?} is invalid. Please check the input.",
-            edge = edge_info
+            "Route {:?} is invalid. Please check the input.",
+            edge_info
         ));
     }
     let start_edge = edge_info[0];
@@ -53,14 +55,14 @@ fn get_edge_info(
         edge_weight = edge_info[2]
     ));
 
-    let start_index = get_node_index_from_node_name(start_edge.to_string(), graph_nodes)?;
-    let end_index = get_node_index_from_node_name(end_edge.to_string(), graph_nodes)?;
+    let start_index = get_node_index_from_node_name(start_edge, graph_nodes)?;
+    let end_index = get_node_index_from_node_name(end_edge, graph_nodes)?;
 
     return Ok((start_index, end_index, edge_weight));
 }
 
 
-fn get_route(
+pub fn get_route(
     first_route: Vec<&str>,
     graph_nodes: &Vec<GraphNode>,
 ) -> Result<(usize, usize), String> {
@@ -79,8 +81,8 @@ fn get_route(
         ));
     }
 
-    let start_idx = get_node_index_from_node_name(start_str.to_string(), graph_nodes)?;
-    let end_idx = get_node_index_from_node_name(end_str.to_string(), graph_nodes)?;
+    let start_idx = get_node_index_from_node_name(start_str, graph_nodes)?;
+    let end_idx = get_node_index_from_node_name(end_str, graph_nodes)?;
 
     return Ok((start_idx, end_idx));
 }
@@ -117,18 +119,18 @@ mod input_tests {
     #[test]
     fn test_route_extraction() {
         let graph_nodes = vec![
-            GraphNode {
-                index: 0,
-                node_name: "Inverness".to_string(),
-            },
-            GraphNode {
-                index: 1,
-                node_name: "Glasgow".to_string(),
-            },
-            GraphNode {
-                index: 2,
-                node_name: "Edinburgh".to_string(),
-            },
+            GraphNode::new(
+                0,
+                "Inverness".to_string(),
+            ),
+            GraphNode::new(
+                1,
+                "Glasgow".to_string(),
+            ),
+            GraphNode::new(
+                2,
+                "Edinburgh".to_string(),
+            ),
         ];
 
         let (start_idx, end_idx) = get_route(vec!["Glasgow", "Edinburgh"], &graph_nodes).expect("");

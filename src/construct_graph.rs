@@ -1,10 +1,12 @@
+use crate::parse_input::get_edge_info;
+
 pub const INFINITE_DIST: usize = 100000000;
 
 #[derive(Debug, PartialEq)]
 pub struct Edge {
-    index_first: usize,
-    index_second: usize,
-    weight: usize,
+    pub index_first: usize,
+    pub index_second: usize,
+    pub weight: usize,
 }
 
 #[derive(Debug, PartialEq)]
@@ -19,8 +21,36 @@ pub struct GraphNode {
     node_name: String,
 }
 
+impl Graph {
 
-fn create_new_edge(start_index: usize, end_index: usize, weight: usize) -> Edge {
+    pub fn new(number_of_nodes: usize, edges: Vec<Vec<Edge>>) -> Self {
+        Self { number_of_nodes, edges }
+    }
+
+    pub fn get_edge_weight(&self, start_index: usize, end_index: usize) -> usize {
+        self.edges[start_index][end_index].weight
+    }
+    pub fn get_number_of_nodes(&self) -> usize {
+        self.number_of_nodes
+    }
+    pub fn get_edges_from_node(&self, starting_node_index :usize) -> &Vec<Edge> {
+        &self.edges[starting_node_index]
+    }
+}
+
+impl GraphNode {
+    pub fn new(index: usize, node_name: String) -> Self {
+        Self { index, node_name }
+    }
+    pub fn get_index(&self) -> usize {
+        self.index
+    }
+    pub fn get_name(&self) -> &str {
+        &self.node_name
+    }
+}
+
+pub fn create_new_edge(start_index: usize, end_index: usize, weight: usize) -> Edge {
     let new_edge = Edge {
         index_first: start_index,
         index_second: end_index,
@@ -106,8 +136,8 @@ pub fn construct_graph_from_edges(
 }
 
 
-fn get_node_index_from_node_name(
-    node_name: String,
+pub fn get_node_index_from_node_name(
+    node_name: &str,
     graph_nodes: &Vec<GraphNode>,
 ) -> Result<usize, String> {
     let graph_node = graph_nodes.iter().find(|&x| x.node_name == node_name);
@@ -124,6 +154,7 @@ fn get_node_index_from_node_name(
 
 #[cfg(test)]
 mod graph_only_tests {
+    use crate::parse_input::get_nodes;
     use super::*;
 
     fn set_up_tests() -> (String, Graph, Vec<GraphNode>) {
@@ -173,9 +204,11 @@ mod graph_only_tests {
 
         let graph_nodes: Vec<GraphNode> = get_nodes(&node_data);
         let graph = construct_graph_from_edges(&graph_nodes, &edge_data);
-        // graph should not contain the I->G 167 path, as this should be updated by the I->G 17 path.
 
         assert_eq!(Ok(expected_graph), graph);
+
+        // graph should not contain the I->G 167 path, as this should be updated by the I->G 17 path.
+        assert_eq!(graph.unwrap().get_edge_weight(0, 1), 17);
     }
     #[test]
     fn test_route_finding_with_incorrect_number_of_nodes() {
