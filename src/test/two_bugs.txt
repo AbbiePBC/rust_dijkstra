@@ -1,0 +1,15 @@
+5
+myHouse
+theOffice
+Meadows
+river
+flippedBoat
+
+5
+myHouse theOffice 10
+theOffice river 19
+theOffice Meadows 6
+Meadows river 1
+river flippedBoat 1
+
+myHouse flippedBoat
