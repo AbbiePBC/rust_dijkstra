@@ -2,7 +2,6 @@ use core::cmp::min;
 use std::collections::BTreeMap;
 use std::env;
 use std::fs;
-use std::process::Command; // Run programs
 use log::debug;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -124,10 +123,12 @@ fn dijkstra(
         let index_to_remove = reverse_sort(&nodes_can_visit);
         let closest_node = nodes_can_visit.remove(&index_to_remove).ok_or("Error in path finding".to_string())?;
 
-        if (closest_node.index != start_idx) && (None == nodes_visited.iter().find(|&x| x.index == closest_node.index)) {
+        if (closest_node.index != start_idx) && (nodes_visited.iter().find(
+                |&x| x.index == closest_node.index) == None) {
             start_idx = closest_node.index;
             parent_idx = closest_node.parent_idx;
-            nodes_visited[start_idx] = Node{index: start_idx, parent_idx, dist_to_node: nodes_visited[parent_idx].dist_to_node + closest_node.dist_to_node};
+            nodes_visited[start_idx] = Node{index: start_idx, parent_idx,
+                dist_to_node: nodes_visited[parent_idx].dist_to_node + closest_node.dist_to_node};
         }
     }
     let nodes_in_order = get_route_travelled(original_start_idx, end_idx, &nodes_visited);
@@ -158,6 +159,8 @@ fn get_human_readable_solution(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use assert_cmd::Command;
+    use predicates::prelude::*;
     #[test]
     fn test_dijkstra() {
         let start_idx = 0;
@@ -269,7 +272,6 @@ mod tests {
     }
     #[test]
     fn find_self_referential_route_in_file() -> Result<(), Box<dyn std::error::Error>> {
-        //unimplemented
         let mut cmd = Command::cargo_bin("rust_dijkstra")?;
         cmd.arg("src/test/edge-cases.txt".to_string());
         cmd.assert().success().stdout(predicate::str::contains(
@@ -279,7 +281,6 @@ mod tests {
     }
     #[test]
     fn find_disconnected_route_in_file() -> Result<(), Box<dyn std::error::Error>> {
-        //unimplemented
         let mut cmd = Command::cargo_bin("rust_dijkstra")?;
         cmd.arg("src/test/edge-cases.txt".to_string());
 

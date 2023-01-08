@@ -1,8 +1,6 @@
-use assert_cmd::prelude::*; // Add methods on commands
-use predicates::prelude::*; // Used for writing assertions
-
 include!("construct_graph.rs");
 include!("find_path.rs");
+include!("parse_input.rs");
 
 fn main() -> Result<(), String> {
     env_logger::init();
