@@ -206,10 +206,7 @@ mod tests {
         let edges_from_middle = vec![create_new_edge(2, 0, 2), create_new_edge(1, 2, 3)];
         let edges_from_end = vec![create_new_edge(2, 1, 3)];
 
-        let graph = Graph {
-            number_of_nodes: 3,
-            edges: vec![edges_from_start, edges_from_middle, edges_from_end],
-        };
+        let graph = Graph::new(3, vec![edges_from_start, edges_from_middle, edges_from_end]);
 
         let (dist, _) = dijkstra(start_idx, end_idx, &graph).unwrap();
         assert_eq!(dist, 5);
@@ -222,10 +219,7 @@ mod tests {
         let edges_from_middle = vec![create_new_edge(0, 1, 2), create_new_edge(1, 2, 3)];
         let edges_from_end = vec![create_new_edge(2, 3, 1)];
 
-        let graph = Graph {
-            number_of_nodes: 3,
-            edges: vec![edges_from_start, edges_from_middle, edges_from_end],
-        };
+        let graph = Graph::new(3, vec![edges_from_start, edges_from_middle, edges_from_end]);
 
         let (dist, _) = dijkstra(start_idx, end_idx, &graph).unwrap();
         assert_eq!(dist, 5);
@@ -234,14 +228,12 @@ mod tests {
     fn test_shorter_initial_route_gets_updated() {
         // assuming bidirectionality, now the edge weight for middle->end should be updated from 3 to 2.
 
-        let expected_graph = Graph {
-            number_of_nodes: 3,
-            edges: vec![
+        let expected_graph = Graph::new (3,
+            vec![
                 vec![create_new_edge(0, 1, 2)],
                 vec![create_new_edge(1, 0, 2), create_new_edge(1, 2, 2)],
                 vec![create_new_edge(2, 1, 2)],
-            ],
-        };
+            ]);
         let (dist, _) = dijkstra(0, 2, &expected_graph).unwrap();
         assert_eq!(dist, 4);
     }
@@ -252,10 +244,7 @@ mod tests {
         let edges_from_start = vec![create_new_edge(2, 1, 2)];
         let edges_from_middle = vec![create_new_edge(1, 2, 3)];
 
-        let graph = Graph {
-            number_of_nodes: 3,
-            edges: vec![edges_from_start, edges_from_middle],
-        };
+        let graph = Graph::new(3, vec![edges_from_start, edges_from_middle]);
 
         let (dist, _) = dijkstra(start_idx, end_idx, &graph).unwrap();
         assert_eq!(dist, 5);
@@ -264,9 +253,8 @@ mod tests {
     fn find_shortest_path_branches() {
         let start_idx = 0;
         let end_idx = 4;
-        let graph = Graph {
-            number_of_nodes: 5,
-            edges: vec![
+        let graph = Graph::new(5,
+            vec![
                 vec![create_new_edge(0, 1, 10)],
                 vec![
                     create_new_edge(1, 0, 10),
@@ -280,8 +268,7 @@ mod tests {
                     create_new_edge(3, 4, 1),
                 ],
                 vec![create_new_edge(4, 3, 1)],
-            ],
-        };
+            ]);
         let (dist, path) = dijkstra(start_idx, end_idx, &graph).unwrap();
         assert_eq!(path, vec![0, 1, 2, 3, 4]);
         assert_eq!(dist, 18);

@@ -20,6 +20,16 @@ pub struct GraphNode {
     pub node_name: String,
 }
 
+impl Graph {
+    pub(crate) fn new(number_of_nodes_: usize, edges_: Vec<Vec<Edge>>) -> Graph {
+        // return is unnecessary but looks weird to me otherwise to have Graph { Graph {...}}
+        return Graph {
+            number_of_nodes: number_of_nodes_,
+            edges: edges_,
+        };
+    }
+}
+
 pub fn create_new_edge(start_index: usize, end_index: usize, weight: usize) -> Edge {
     let new_edge = Edge {
         index_first: start_index,
@@ -76,10 +86,7 @@ pub fn construct_graph_from_edges(
     for _ in 0..num_nodes {
         vec.push(Vec::with_capacity(num_nodes));
     }
-    let mut graph = Graph {
-        number_of_nodes: graph_nodes.len(),
-        edges: vec,
-    };
+    let mut graph = Graph::new(graph_nodes.len(),vec);
 
     for i in 1..(num_edges + 1) {
         let (start_index, end_index, weight) = get_edge_info(edges[i], graph_nodes)?;
@@ -124,14 +131,14 @@ mod graph_only_tests {
     fn set_up_tests() -> (String, Graph, Vec<GraphNode>) {
         let contents =
             "3\nI\nG\nE\n\n4\nI G 167\nI E 158\nG E 45\nI G 17\n\nG E\nE I\n\n".to_string();
-        let expected_graph = Graph {
-            number_of_nodes: 3,
-            edges: vec![
+        let expected_graph = Graph::new(
+            3,
+            vec![
                 vec![create_new_edge(0, 2, 158), create_new_edge(0, 1, 17)],
                 vec![create_new_edge(1, 2, 45), create_new_edge(1, 0, 17)],
                 vec![create_new_edge(2, 0, 158), create_new_edge(2, 1, 45)],
             ],
-        };
+        );
 
         let graph_nodes = vec![
             GraphNode {
