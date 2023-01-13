@@ -25,3 +25,10 @@ capturing stdout, or comparing human-readable strings. Something like `assert_eq
 or using a custom enum instead of Result would convey the different error cases more clearly.
 [ ] improve readability dijkstra and add_to_frontier functions work.
 [ ] if possible, remove cyclic dependency of parse_input and construct_graph
+
+# Bug fix!
+[ ] After fixing the bug in which the total dist from the start node was added rather than of an edge
+the results are different
+Route travelled: Cardiff->Bristol->Birmingham->London, with distance 243 (previously Cardiff->Bristol->London 158)
+Route travelled: York->Manchester->Birmingham, with distance 146 (previously York->Birmingham 126)
+Route travelled: London->Birmingham->Manchester->York->Newcastle->Edinburgh->Inverness, with distance 604 (London->York->Newcastle->Edinburgh->Inverness 541)

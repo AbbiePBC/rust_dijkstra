@@ -308,11 +308,55 @@ mod tests {
 
     #[test]
     fn find_correct_route_in_file() -> Result<(), Box<dyn std::error::Error>> {
-        let mut cmd = Command::cargo_bin("rust_dijkstra")?;
-        cmd.arg("src/test/uk.txt".to_string());
-        cmd.assert().success().stdout(predicate::str::contains(
-            "Route travelled: Glasgow->Edinburgh, with distance 45\n",
-        ));
+
+        // 5
+        // Cardiff
+        // Bristol
+        // London
+        // York
+        // Birmingham
+        //
+        // 5
+        // York London 194
+        // Cardiff Bristol 44
+        // Bristol Birmingham 88
+        // Bristol London 114
+        // Birmingham London 111
+        //
+        // Cardiff London
+
+        let start_idx = 0;
+        let end_idx = 2;
+        let graph = Graph::new(5,
+       vec![
+           vec![Edge::new(0, 1, 44)],
+           vec![
+               Edge::new(1, 0, 44),
+               Edge::new(1, 4, 88),
+               Edge::new(1, 2, 114),
+           ],
+           vec![
+               Edge::new(2, 3, 194),
+               Edge::new(2, 1, 114),
+               Edge::new(2, 4, 111)
+           ],
+           vec![
+               Edge::new(3, 2, 194),
+           ],
+           vec![
+               Edge::new(4, 2, 111),
+               Edge::new(4, 1, 88),
+           ],
+       ]);
+        let (dist, path) = dijkstra(start_idx, end_idx, &graph).unwrap();
+        assert_eq!(dist, 158);
+        assert_eq!(path, vec![0,1,3]);
+        //
+        // let mut cmd = Command::cargo_bin("rust_dijkstra")?;
+        // cmd.arg("src/test/uk.txt".to_string());
+        // cmd.assert().success().stdout(predicate::str::contains(
+        //     "Route travelled: Cardiff>Bristol->London, with distance 45\n",
+        // ));
 
         Ok(())
         //todo test more complex routes than this.
