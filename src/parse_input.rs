@@ -1,4 +1,4 @@
-use crate::construct_graph::{GraphNode, get_node_index_from_node_name};
+use crate::construct_graph::{get_node_index_from_node_name, GraphNode};
 use log::debug;
 
 pub fn read_input(contents: String) -> Result<(String, String, String), String> {
@@ -13,14 +13,14 @@ pub fn read_input(contents: String) -> Result<(String, String, String), String> 
     return Ok((node_data, edge_data, routes_to_find));
 }
 
-pub fn get_nodes(node_data: &str) -> Vec<GraphNode> {
+pub fn get_nodes(node_data: &str) -> Result<Vec<GraphNode>, String> {
     let nodes: Vec<&str> = node_data.split("\n").collect();
     let num_nodes: usize = nodes[0]
         .parse::<usize>()
         .expect("Expect an integer number of nodes.");
 
     if nodes.len() != num_nodes + 1 {
-        println!("Unexpected number of nodes");
+        return Err("Unexpected number of nodes".to_string());
     }
 
     let mut graph_nodes = Vec::with_capacity(num_nodes);
@@ -34,7 +34,7 @@ pub fn get_nodes(node_data: &str) -> Vec<GraphNode> {
 
     debug!("graph nodes: {:?}", graph_nodes);
 
-    return graph_nodes;
+    return Ok(graph_nodes);
 }
 
 pub fn get_edge_info(
@@ -44,13 +44,15 @@ pub fn get_edge_info(
     let edge_info: Vec<&str> = edge.split(" ").collect();
     if edge_info.len() != 3 {
         return Err(format!(
-            "Route {:?} is invalid. Please check the input.", edge_info
+            "Route {:?} is invalid. Please check the input.",
+            edge_info
         ));
     }
     let start_edge = edge_info[0];
     let end_edge = edge_info[1];
     let edge_weight = edge_info[2].parse::<usize>().expect(&format!(
-        "Distance between edges should be an integer, {} found.", edge_info[2]
+        "Distance between edges should be an integer, {} found.",
+        edge_info[2]
     ));
 
     let start_index = get_node_index_from_node_name(start_edge.to_string(), graph_nodes)?;
@@ -65,7 +67,8 @@ pub fn get_route(
 ) -> Result<(usize, usize), String> {
     if first_route.len() != 2 {
         return Err(format!(
-            "Route {:?} is invalid. Please check the input.", first_route
+            "Route {:?} is invalid. Please check the input.",
+            first_route
         ));
     }
     let start_str = first_route[0];

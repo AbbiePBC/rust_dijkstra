@@ -20,7 +20,6 @@ pub struct GraphNode {
     pub node_name: String,
 }
 
-
 pub fn create_new_edge(start_index: usize, end_index: usize, weight: usize) -> Edge {
     let new_edge = Edge {
         index_first: start_index,
@@ -49,11 +48,8 @@ fn update_existing_edge(graph: &mut Graph, new_edge: Edge) -> bool {
             }
         }
     }
-    graph.edges[start_index].push(
-        new_edge
-    );
+    graph.edges[start_index].push(new_edge);
     return edge_was_updated;
-
 }
 
 pub fn construct_graph_from_edges(
@@ -67,7 +63,9 @@ pub fn construct_graph_from_edges(
 
     if num_edges != edges.len() - 1 {
         return Err(format!(
-            "Unexpected number of edges. Expected: {}, actual: {}", num_edges, edges.len() - 1,
+            "Unexpected number of edges. Expected: {}, actual: {}",
+            num_edges,
+            edges.len() - 1,
         ));
     }
 
@@ -97,14 +95,12 @@ pub fn construct_graph_from_edges(
         if new_edge_is_updated {
             update_existing_edge(&mut graph, new_reverse_edge);
         }
-
     }
 
     return Ok(graph);
 }
 
-
-pub fn get_node_index_from_node_name (
+pub fn get_node_index_from_node_name(
     node_name: String,
     graph_nodes: &Vec<GraphNode>,
 ) -> Result<usize, String> {
@@ -131,18 +127,9 @@ mod graph_only_tests {
         let expected_graph = Graph {
             number_of_nodes: 3,
             edges: vec![
-                vec![
-                    create_new_edge(0, 2, 158),
-                    create_new_edge(0, 1, 17),
-                ],
-                vec![
-                    create_new_edge(1, 2, 45),
-                    create_new_edge(1, 0, 17),
-                ],
-                vec![
-                    create_new_edge(2, 0, 158),
-                    create_new_edge(2, 1, 45),
-                ],
+                vec![create_new_edge(0, 2, 158), create_new_edge(0, 1, 17)],
+                vec![create_new_edge(1, 2, 45), create_new_edge(1, 0, 17)],
+                vec![create_new_edge(2, 0, 158), create_new_edge(2, 1, 45)],
             ],
         };
 
@@ -170,7 +157,7 @@ mod graph_only_tests {
         let node_data = data[0].to_string();
         let edge_data = data[1].to_string();
 
-        let graph_nodes: Vec<GraphNode> = get_nodes(&node_data);
+        let graph_nodes: Vec<GraphNode> = get_nodes(&node_data).unwrap();
         let graph = construct_graph_from_edges(&graph_nodes, &edge_data);
         // graph should not contain the I->G 167 path, as this should be updated by the I->G 17 path.
 

@@ -2,11 +2,11 @@ mod construct_graph;
 mod find_path;
 mod parse_input;
 
-use std::{env, fs};
-use log::debug;
 use crate::construct_graph::{construct_graph_from_edges, GraphNode};
 use crate::find_path::get_human_readable_solution;
 use crate::parse_input::{get_nodes, read_input};
+use log::debug;
+use std::{env, fs};
 
 fn main() -> Result<(), String> {
     env_logger::init();
@@ -20,10 +20,21 @@ fn main() -> Result<(), String> {
     }
 
     let filename = &args[1];
-    let contents =
-        fs::read_to_string(filename.to_string()).expect("Should have been able to read the file");
-    let (node_data, edge_data, routes_to_find) = read_input(contents)?;
-    let graph_nodes: Vec<GraphNode> = get_nodes(&node_data);
+    let contents = fs::read_to_string(filename.to_string());
+    match contents {
+        Err(_) => {
+            let current_dir =
+                env::current_dir().expect("Path provided was incorrect. File not found.");
+            println!(
+                "Path provided ({}/{}) was incorrect. File not found.",
+                current_dir.display(),
+                filename
+            )
+        }
+        Ok(_) => {}
+    }
+    let (node_data, edge_data, routes_to_find) = read_input(contents.unwrap())?;
+    let graph_nodes: Vec<GraphNode> = get_nodes(&node_data)?;
     let graph = construct_graph_from_edges(&graph_nodes, &edge_data)?;
 
     debug!("graph: {:?}", graph);

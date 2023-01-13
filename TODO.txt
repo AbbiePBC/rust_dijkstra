@@ -4,11 +4,11 @@
 [x] in rust, mod should be used instead of include!().
 [x] probably not worth providing names always for format!().
 [ ] &str should be used instead of String where possible.
-[ ] print path if doesn't exist
-[ ] error out if incorrect number of nodes is provided
-[ ] use more specific naming rather than get_node()
-[ ] test_shorter_initial_route_gets_updated is testing 2 things; use the expected graph instead of the parsed one.
-[ ] rename reverse_sort() lol
+[x] print path if doesn't exist
+[x] error out if incorrect number of nodes is provided
+[ ] use more specific naming rather than get_node() // leaving this for now incase it becomes a method
+[x] test_shorter_initial_route_gets_updated is testing 2 things; use the expected graph instead of the parsed one.
+[x] rename reverse_sort() lol
 
 # Design comments
 [ ] group the parsing functions under a module, and put that under the graph module,

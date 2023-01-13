@@ -1,5 +1,5 @@
-use std::collections::btree_map::BTreeMap;
 use log::debug;
+use std::collections::btree_map::BTreeMap;
 
 use crate::construct_graph::*;
 use crate::parse_input::{get_nodes, get_route};
@@ -57,8 +57,7 @@ fn print_route(route: Vec<String>) -> String {
     return final_path;
 }
 
-
-fn reverse_sort(nodes_can_visit: &BTreeMap<usize, Node>) -> usize {
+fn index_of_closest_node(nodes_can_visit: &BTreeMap<usize, Node>) -> usize {
     let mut min_weight = INFINITE_DIST;
     let mut index_to_remove = INFINITE_DIST;
     for (_, node) in nodes_can_visit {
@@ -70,21 +69,37 @@ fn reverse_sort(nodes_can_visit: &BTreeMap<usize, Node>) -> usize {
     return index_to_remove;
 }
 
-
-fn add_to_frontier(nodes_can_visit: &mut BTreeMap<usize, Node>, nodes_visited: &Vec<Node>, edge_to_add: &Edge, start_idx: usize) {
+fn add_to_frontier(
+    nodes_can_visit: &mut BTreeMap<usize, Node>,
+    nodes_visited: &Vec<Node>,
+    edge_to_add: &Edge,
+    start_idx: usize,
+) {
     if nodes_can_visit.contains_key(&edge_to_add.index_second) {
-        debug!("we already have the ability to visit node {:?};{:?}", edge_to_add.index_second, nodes_can_visit.entry(edge_to_add.index_second));
-        debug!("the proposed edge to add is {:?} from {}", edge_to_add, start_idx);
+        debug!(
+            "we already have the ability to visit node {:?};{:?}",
+            edge_to_add.index_second,
+            nodes_can_visit.entry(edge_to_add.index_second)
+        );
+        debug!(
+            "the proposed edge to add is {:?} from {}",
+            edge_to_add, start_idx
+        );
         nodes_can_visit
             .entry(edge_to_add.index_second)
             .and_modify(|curr_node| {
-                debug!{"comparing the new edge dist ({}) with the old", (edge_to_add.weight)}
+                debug! {"comparing the new edge dist ({}) with the old", (edge_to_add.weight)}
                 if edge_to_add.weight < curr_node.dist_to_node {
                     curr_node.dist_to_node = edge_to_add.weight;
                     curr_node.parent_idx = edge_to_add.index_first;
                 }
             });
-    } else if (None == nodes_visited.iter().find(|&x| x.index == edge_to_add.index_second)) && edge_to_add.index_second != start_idx {
+    } else if (None
+        == nodes_visited
+            .iter()
+            .find(|&x| x.index == edge_to_add.index_second))
+        && edge_to_add.index_second != start_idx
+    {
         // if not present, and we haven't visited the node
         nodes_can_visit.insert(
             edge_to_add.index_second,
@@ -110,14 +125,21 @@ fn dijkstra(
     //todo: use a binary search tree here to avoid needing to allocate space for the whole vector.
     let mut nodes_visited: Vec<Node> = Vec::with_capacity(number_of_nodes);
     for _ in 0..number_of_nodes {
-        nodes_visited.push(Node{index: INFINITE_DIST, parent_idx: INFINITE_DIST, dist_to_node: 0});
+        nodes_visited.push(Node {
+            index: INFINITE_DIST,
+            parent_idx: INFINITE_DIST,
+            dist_to_node: 0,
+        });
     }
-    nodes_visited[start_idx] = Node {index: start_idx, parent_idx, dist_to_node: 0};
+    nodes_visited[start_idx] = Node {
+        index: start_idx,
+        parent_idx,
+        dist_to_node: 0,
+    };
 
     let mut nodes_can_visit: BTreeMap<usize, Node> = BTreeMap::new();
 
     while start_idx != end_idx {
-
         for edge in &graph.edges[start_idx] {
             add_to_frontier(&mut nodes_can_visit, &nodes_visited, edge, start_idx);
             debug!("now adding edge: {:?}", edge);
@@ -127,18 +149,24 @@ fn dijkstra(
         }
         debug!("nodes can visit: {:?}", nodes_can_visit);
 
-        let index_to_remove = reverse_sort(&nodes_can_visit);
-        let closest_node = nodes_can_visit.remove(&index_to_remove).ok_or("Error in path finding".to_string())?;
-        let can_go_to_closest_node = (closest_node.index != start_idx) && (nodes_visited.iter().find(
-            |&x| x.index == closest_node.index) == None);
+        let index_to_remove = index_of_closest_node(&nodes_can_visit);
+        let closest_node = nodes_can_visit
+            .remove(&index_to_remove)
+            .ok_or("Error in path finding".to_string())?;
+        let can_go_to_closest_node = (closest_node.index != start_idx)
+            && (nodes_visited
+                .iter()
+                .find(|&x| x.index == closest_node.index)
+                == None);
         if can_go_to_closest_node {
             start_idx = closest_node.index;
             parent_idx = closest_node.parent_idx;
-            nodes_visited[start_idx] = Node{index: start_idx, parent_idx,
-                dist_to_node: nodes_visited[parent_idx].dist_to_node + closest_node.dist_to_node};
-
+            nodes_visited[start_idx] = Node {
+                index: start_idx,
+                parent_idx,
+                dist_to_node: nodes_visited[parent_idx].dist_to_node + closest_node.dist_to_node,
+            };
         }
-
     }
     let nodes_in_order = get_route_travelled(original_start_idx, end_idx, &nodes_visited);
 
@@ -174,16 +202,9 @@ mod tests {
     fn test_dijkstra() {
         let start_idx = 0;
         let end_idx = 2;
-        let edges_from_start = vec![
-            create_new_edge(0, 1, 2),
-        ];
-        let edges_from_middle = vec![
-            create_new_edge(2, 0, 2),
-            create_new_edge(1, 2, 3),
-        ];
-        let edges_from_end = vec![
-            create_new_edge(2,1, 3),
-        ];
+        let edges_from_start = vec![create_new_edge(0, 1, 2)];
+        let edges_from_middle = vec![create_new_edge(2, 0, 2), create_new_edge(1, 2, 3)];
+        let edges_from_end = vec![create_new_edge(2, 1, 3)];
 
         let graph = Graph {
             number_of_nodes: 3,
@@ -197,17 +218,9 @@ mod tests {
     fn test_multiple_start_edges() {
         let start_idx = 0;
         let end_idx = 2;
-        let edges_from_start = vec![
-            create_new_edge(0, 1, 20),
-            create_new_edge(0, 1, 2),
-        ];
-        let edges_from_middle = vec![
-            create_new_edge(0, 1, 2),
-            create_new_edge(1, 2, 3),
-        ];
-        let edges_from_end = vec![
-            create_new_edge(2, 3, 1)
-        ];
+        let edges_from_start = vec![create_new_edge(0, 1, 20), create_new_edge(0, 1, 2)];
+        let edges_from_middle = vec![create_new_edge(0, 1, 2), create_new_edge(1, 2, 3)];
+        let edges_from_end = vec![create_new_edge(2, 3, 1)];
 
         let graph = Graph {
             number_of_nodes: 3,
@@ -221,43 +234,23 @@ mod tests {
     fn test_shorter_initial_route_gets_updated() {
         // assuming bidirectionality, now the edge weight for middle->end should be updated from 3 to 2.
 
-        let contents = "3\nA\nB\nC\n\n4\nA B 2\nB A 2\nB C 3\nC B 2\n\nA C\n\n";
-        let data: Vec<&str> = contents.split("\n\n").collect();
-
-        let node_data = data[0].to_string();
-        let edge_data = data[1].to_string();
-
-        let graph_nodes: Vec<GraphNode> = get_nodes(&node_data);
-        let graph = construct_graph_from_edges(&graph_nodes, &edge_data).expect("");
         let expected_graph = Graph {
             number_of_nodes: 3,
             edges: vec![
-                vec![
-                    create_new_edge(0, 1, 2)
-                ],
-                vec![
-                    create_new_edge(1, 0, 2),
-                    create_new_edge(1, 2, 2),
-                ],
-                vec![
-                    create_new_edge(2, 1, 2),
-                ],
+                vec![create_new_edge(0, 1, 2)],
+                vec![create_new_edge(1, 0, 2), create_new_edge(1, 2, 2)],
+                vec![create_new_edge(2, 1, 2)],
             ],
         };
-        assert_eq!(expected_graph, graph);
-        let (dist, _) = dijkstra(0, 2, &graph).unwrap();
+        let (dist, _) = dijkstra(0, 2, &expected_graph).unwrap();
         assert_eq!(dist, 4);
     }
     #[test]
     fn test_edges_not_explicitly_in_both_directions() {
         let start_idx = 0;
         let end_idx = 2;
-        let edges_from_start = vec![
-            create_new_edge(2, 1, 2)
-        ];
-        let edges_from_middle = vec![
-            create_new_edge(1, 2, 3)
-        ];
+        let edges_from_start = vec![create_new_edge(2, 1, 2)];
+        let edges_from_middle = vec![create_new_edge(1, 2, 3)];
 
         let graph = Graph {
             number_of_nodes: 3,
@@ -267,56 +260,64 @@ mod tests {
         let (dist, _) = dijkstra(start_idx, end_idx, &graph).unwrap();
         assert_eq!(dist, 5);
     }
-   #[test]
-   fn find_shortest_path_branches() {
+    #[test]
+    fn find_shortest_path_branches() {
         let start_idx = 0;
         let end_idx = 4;
         let graph = Graph {
             number_of_nodes: 5,
             edges: vec![
+                vec![create_new_edge(0, 1, 10)],
                 vec![
-                    create_new_edge(0,1,10),
+                    create_new_edge(1, 0, 10),
+                    create_new_edge(1, 3, 9),
+                    create_new_edge(1, 2, 6),
                 ],
+                vec![create_new_edge(2, 3, 1)],
                 vec![
-                    create_new_edge(1,0,10),
-                    create_new_edge(1,3,9),
-                    create_new_edge(1,2,6),
+                    create_new_edge(3, 1, 9),
+                    create_new_edge(3, 2, 1),
+                    create_new_edge(3, 4, 1),
                 ],
-                vec![
-                    create_new_edge(2,3,1),
-                ],
-                vec![
-                    create_new_edge(3,1,9),
-                    create_new_edge(3,2,1),
-                    create_new_edge(3,4,1),
-                ],
-                vec![
-                    create_new_edge(4,3,1),
-                ]
-            ]
+                vec![create_new_edge(4, 3, 1)],
+            ],
         };
         let (dist, path) = dijkstra(start_idx, end_idx, &graph).unwrap();
-        assert_eq!(path, vec![0,1,2,3,4]);
+        assert_eq!(path, vec![0, 1, 2, 3, 4]);
         assert_eq!(dist, 18);
-   }
-   #[test]
-   fn add_to_frontier_test() {
+    }
+    #[test]
+    fn add_to_frontier_test() {
+        let mut nodes_can_visit: BTreeMap<usize, Node> = BTreeMap::new();
+        let nodes_visited: Vec<Node> = Vec::new();
+        let edge_to_add = create_new_edge(0, 1, 10);
+        let second_edge_to_add = create_new_edge(2, 1, 3);
 
-    let mut nodes_can_visit: BTreeMap<usize, Node> = BTreeMap::new();
-    let nodes_visited: Vec<Node> = Vec::new();
-    let edge_to_add = create_new_edge(0,1,10);
-    let second_edge_to_add = create_new_edge(2,1,3);
+        let start_idx = 0;
+        add_to_frontier(
+            &mut nodes_can_visit,
+            &nodes_visited,
+            &edge_to_add,
+            start_idx,
+        );
+        add_to_frontier(
+            &mut nodes_can_visit,
+            &nodes_visited,
+            &second_edge_to_add,
+            start_idx,
+        );
 
-    let start_idx = 0;
-    add_to_frontier(&mut nodes_can_visit, &nodes_visited, &edge_to_add, start_idx);
-    add_to_frontier(&mut nodes_can_visit, &nodes_visited, &second_edge_to_add, start_idx);
-
-    let mut expected_visitable_nodes = BTreeMap::new();
-    expected_visitable_nodes.insert(1, Node{index: 1, parent_idx: 2, dist_to_node: 3});
-    assert_eq!(nodes_can_visit, expected_visitable_nodes);
-
-
-   }
+        let mut expected_visitable_nodes = BTreeMap::new();
+        expected_visitable_nodes.insert(
+            1,
+            Node {
+                index: 1,
+                parent_idx: 2,
+                dist_to_node: 3,
+            },
+        );
+        assert_eq!(nodes_can_visit, expected_visitable_nodes);
+    }
 
     #[test]
     fn find_correct_route_in_file() -> Result<(), Box<dyn std::error::Error>> {
