@@ -44,15 +44,13 @@ pub fn get_edge_info(
     let edge_info: Vec<&str> = edge.split(" ").collect();
     if edge_info.len() != 3 {
         return Err(format!(
-            "Route {edge:?} is invalid. Please check the input.",
-            edge = edge_info
+            "Route {:?} is invalid. Please check the input.", edge_info
         ));
     }
     let start_edge = edge_info[0];
     let end_edge = edge_info[1];
     let edge_weight = edge_info[2].parse::<usize>().expect(&format!(
-        "Distance between edges should be an integer, {edge_weight} found.",
-        edge_weight = edge_info[2]
+        "Distance between edges should be an integer, {} found.", edge_info[2]
     ));
 
     let start_index = get_node_index_from_node_name(start_edge.to_string(), graph_nodes)?;
@@ -67,8 +65,7 @@ pub fn get_route(
 ) -> Result<(usize, usize), String> {
     if first_route.len() != 2 {
         return Err(format!(
-            "Route {route:?} is invalid. Please check the input.",
-            route = first_route
+            "Route {:?} is invalid. Please check the input.", first_route
         ));
     }
     let start_str = first_route[0];

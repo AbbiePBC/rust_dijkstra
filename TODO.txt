@@ -2,7 +2,7 @@
 
 # Easy things to fix
 [x] in rust, mod should be used instead of include!().
-[ ] probably not worth providing names always for format!().
+[x] probably not worth providing names always for format!().
 [ ] &str should be used instead of String where possible.
 [ ] print path if doesn't exist
 [ ] error out if incorrect number of nodes is provided

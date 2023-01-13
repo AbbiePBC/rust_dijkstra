@@ -67,9 +67,7 @@ pub fn construct_graph_from_edges(
 
     if num_edges != edges.len() - 1 {
         return Err(format!(
-            "Unexpected number of edges. Expected: {num_edges}, actual: {edges_len}",
-            num_edges = num_edges,
-            edges_len = edges.len() - 1,
+            "Unexpected number of edges. Expected: {}, actual: {}", num_edges, edges.len() - 1,
         ));
     }
 
