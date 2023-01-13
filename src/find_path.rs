@@ -208,8 +208,9 @@ mod tests {
 
         let graph = Graph::new(3, vec![edges_from_start, edges_from_middle, edges_from_end]);
 
-        let (dist, _) = dijkstra(start_idx, end_idx, &graph).unwrap();
+        let (dist, path) = dijkstra(start_idx, end_idx, &graph).unwrap();
         assert_eq!(dist, 5);
+        assert_eq!(path, vec![0, 1, 2]);
     }
     #[test]
     fn test_multiple_start_edges() {
@@ -221,8 +222,9 @@ mod tests {
 
         let graph = Graph::new(3, vec![edges_from_start, edges_from_middle, edges_from_end]);
 
-        let (dist, _) = dijkstra(start_idx, end_idx, &graph).unwrap();
+        let (dist, path) = dijkstra(start_idx, end_idx, &graph).unwrap();
         assert_eq!(dist, 5);
+        assert_eq!(path, vec![0, 1, 2]);
     }
     #[test]
     fn test_shorter_initial_route_gets_updated() {
@@ -234,8 +236,9 @@ mod tests {
                 vec![Edge::new(1, 0, 2), Edge::new(1, 2, 2)],
                 vec![Edge::new(2, 1, 2)],
             ]);
-        let (dist, _) = dijkstra(0, 2, &expected_graph).unwrap();
+        let (dist, path) = dijkstra(0, 2, &expected_graph).unwrap();
         assert_eq!(dist, 4);
+        assert_eq!(paht, vec![0, 1, 2])
     }
     #[test]
     fn test_edges_not_explicitly_in_both_directions() {
