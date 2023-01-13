@@ -238,7 +238,7 @@ mod tests {
             ]);
         let (dist, path) = dijkstra(0, 2, &expected_graph).unwrap();
         assert_eq!(dist, 4);
-        assert_eq!(paht, vec![0, 1, 2])
+        assert_eq!(path, vec![0, 1, 2])
     }
     #[test]
     fn test_edges_not_explicitly_in_both_directions() {
