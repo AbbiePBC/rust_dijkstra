@@ -2,7 +2,7 @@ use log::debug;
 use std::collections::btree_map::BTreeMap;
 
 use crate::construct_graph::*;
-use crate::parse_input::{get_nodes, get_route};
+use crate::parse_input::get_route;
 
 #[derive(Debug, Clone, PartialEq)]
 struct Node {

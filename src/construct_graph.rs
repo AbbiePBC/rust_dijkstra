@@ -101,7 +101,7 @@ pub fn construct_graph_from_edges(
 }
 
 pub fn get_node_index_from_node_name(
-    node_name: String,
+    node_name: &str,
     graph_nodes: &Vec<GraphNode>,
 ) -> Result<usize, String> {
     let graph_node = graph_nodes.iter().find(|&x| x.node_name == node_name);
