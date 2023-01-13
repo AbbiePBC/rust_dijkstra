@@ -1,8 +1,8 @@
-use core::cmp::min;
-use std::collections::BTreeMap;
-use std::env;
-use std::fs;
+use std::collections::btree_map::BTreeMap;
 use log::debug;
+
+use crate::construct_graph::*;
+use crate::parse_input::{get_nodes, get_route};
 
 #[derive(Debug, Clone, PartialEq)]
 struct Node {
@@ -31,7 +31,7 @@ fn get_route_travelled(
     return nodes_in_order;
 }
 
-fn get_human_readable_route(
+pub fn get_human_readable_route(
     nodes_in_order: Vec<usize>,
     graph_nodes: &Vec<GraphNode>,
 ) -> Result<Vec<String>, String> {
@@ -71,7 +71,7 @@ fn reverse_sort(nodes_can_visit: &BTreeMap<usize, Node>) -> usize {
 }
 
 
-fn add_to_frontier(mut nodes_can_visit: &mut BTreeMap<usize, Node>, nodes_visited: &Vec<Node>, edge_to_add: &Edge, start_idx: usize) {
+fn add_to_frontier(nodes_can_visit: &mut BTreeMap<usize, Node>, nodes_visited: &Vec<Node>, edge_to_add: &Edge, start_idx: usize) {
     if nodes_can_visit.contains_key(&edge_to_add.index_second) {
         debug!("we already have the ability to visit node {:?};{:?}", edge_to_add.index_second, nodes_can_visit.entry(edge_to_add.index_second));
         debug!("the proposed edge to add is {:?} from {}", edge_to_add, start_idx);
@@ -82,7 +82,7 @@ fn add_to_frontier(mut nodes_can_visit: &mut BTreeMap<usize, Node>, nodes_visite
                 if edge_to_add.weight < curr_node.dist_to_node {
                     curr_node.dist_to_node = edge_to_add.weight;
                     curr_node.parent_idx = edge_to_add.index_first;
-                }  
+                }
             });
     } else if (None == nodes_visited.iter().find(|&x| x.index == edge_to_add.index_second)) && edge_to_add.index_second != start_idx {
         // if not present, and we haven't visited the node
@@ -127,7 +127,7 @@ fn dijkstra(
         }
         debug!("nodes can visit: {:?}", nodes_can_visit);
 
-        let index_to_remove = reverse_sort(&nodes_can_visit);        
+        let index_to_remove = reverse_sort(&nodes_can_visit);
         let closest_node = nodes_can_visit.remove(&index_to_remove).ok_or("Error in path finding".to_string())?;
         let can_go_to_closest_node = (closest_node.index != start_idx) && (nodes_visited.iter().find(
             |&x| x.index == closest_node.index) == None);
@@ -136,16 +136,16 @@ fn dijkstra(
             parent_idx = closest_node.parent_idx;
             nodes_visited[start_idx] = Node{index: start_idx, parent_idx,
                 dist_to_node: nodes_visited[parent_idx].dist_to_node + closest_node.dist_to_node};
-    
+
         }
-        
+
     }
     let nodes_in_order = get_route_travelled(original_start_idx, end_idx, &nodes_visited);
 
     return Ok((nodes_visited[end_idx].dist_to_node, nodes_in_order));
 }
 
-fn get_human_readable_solution(
+pub fn get_human_readable_solution(
     route: &str,
     graph_nodes: &Vec<GraphNode>,
     graph: &Graph,
@@ -284,7 +284,7 @@ mod tests {
                 ],
                 vec![
                     create_new_edge(2,3,1),
-                ], 
+                ],
                 vec![
                     create_new_edge(3,1,9),
                     create_new_edge(3,2,1),
@@ -301,7 +301,7 @@ mod tests {
    }
    #[test]
    fn add_to_frontier_test() {
-    
+
     let mut nodes_can_visit: BTreeMap<usize, Node> = BTreeMap::new();
     let nodes_visited: Vec<Node> = Vec::new();
     let edge_to_add = create_new_edge(0,1,10);

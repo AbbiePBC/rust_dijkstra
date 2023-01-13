@@ -1,5 +1,7 @@
+use crate::construct_graph::{GraphNode, get_node_index_from_node_name};
+use log::debug;
 
-fn read_input(contents: String) -> Result<(String, String, String), String> {
+pub fn read_input(contents: String) -> Result<(String, String, String), String> {
     let data: Vec<&str> = contents.split("\n\n").collect();
     if data.len() != 3 {
         return Err("Invalid file format.".to_string());
@@ -11,7 +13,7 @@ fn read_input(contents: String) -> Result<(String, String, String), String> {
     return Ok((node_data, edge_data, routes_to_find));
 }
 
-fn get_nodes(node_data: &str) -> Vec<GraphNode> {
+pub fn get_nodes(node_data: &str) -> Vec<GraphNode> {
     let nodes: Vec<&str> = node_data.split("\n").collect();
     let num_nodes: usize = nodes[0]
         .parse::<usize>()
@@ -35,7 +37,7 @@ fn get_nodes(node_data: &str) -> Vec<GraphNode> {
     return graph_nodes;
 }
 
-fn get_edge_info(
+pub fn get_edge_info(
     edge: &str,
     graph_nodes: &Vec<GraphNode>,
 ) -> Result<(usize, usize, usize), String> {
@@ -59,8 +61,7 @@ fn get_edge_info(
     return Ok((start_index, end_index, edge_weight));
 }
 
-
-fn get_route(
+pub fn get_route(
     first_route: Vec<&str>,
     graph_nodes: &Vec<GraphNode>,
 ) -> Result<(usize, usize), String> {

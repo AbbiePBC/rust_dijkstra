@@ -1,26 +1,27 @@
+use crate::parse_input::get_edge_info;
 pub const INFINITE_DIST: usize = 100000000;
 
 #[derive(Debug, PartialEq)]
 pub struct Edge {
-    index_first: usize,
-    index_second: usize,
-    weight: usize,
+    pub index_first: usize,
+    pub index_second: usize,
+    pub weight: usize,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct Graph {
-    number_of_nodes: usize,
-    edges: Vec<Vec<Edge>>,
+    pub number_of_nodes: usize,
+    pub edges: Vec<Vec<Edge>>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct GraphNode {
-    index: usize,
-    node_name: String,
+    pub index: usize,
+    pub node_name: String,
 }
 
 
-fn create_new_edge(start_index: usize, end_index: usize, weight: usize) -> Edge {
+pub fn create_new_edge(start_index: usize, end_index: usize, weight: usize) -> Edge {
     let new_edge = Edge {
         index_first: start_index,
         index_second: end_index,
@@ -105,7 +106,7 @@ pub fn construct_graph_from_edges(
 }
 
 
-fn get_node_index_from_node_name(
+pub fn get_node_index_from_node_name (
     node_name: String,
     graph_nodes: &Vec<GraphNode>,
 ) -> Result<usize, String> {
@@ -124,6 +125,7 @@ fn get_node_index_from_node_name(
 #[cfg(test)]
 mod graph_only_tests {
     use super::*;
+    use crate::get_nodes;
 
     fn set_up_tests() -> (String, Graph, Vec<GraphNode>) {
         let contents =

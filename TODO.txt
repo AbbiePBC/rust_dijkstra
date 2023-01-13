@@ -1,7 +1,7 @@
 ## TODOs
 
 # Easy things to fix
-[ ] in rust, mod should be used instead of include!().
+[x] in rust, mod should be used instead of include!().
 [ ] probably not worth providing names always for format!().
 [ ] &str should be used instead of String where possible.
 [ ] print path if doesn't exist
@@ -24,3 +24,4 @@ For example, `graph.create_new_edge(start, end, weight)` doesn't require the cli
 capturing stdout, or comparing human-readable strings. Something like `assert_eq!(dikjstra_from_file("src/test/uk.txt"), OK(("Glasgow", "Edinburgh", 45)));`,
 or using a custom enum instead of Result would convey the different error cases more clearly.
 [ ] improve readability dijkstra and add_to_frontier functions work.
+[ ] if possible, remove cyclic dependency of parse_input and construct_graph
