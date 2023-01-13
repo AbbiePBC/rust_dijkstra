@@ -30,13 +30,14 @@ impl Graph {
     }
 }
 
-pub fn create_new_edge(start_index: usize, end_index: usize, weight: usize) -> Edge {
-    let new_edge = Edge {
-        index_first: start_index,
-        index_second: end_index,
-        weight,
-    };
-    return new_edge;
+impl Edge {
+    pub(crate) fn new(start_index: usize, end_index: usize, weight: usize) -> Edge {
+        return Edge {
+            index_first: start_index,
+            index_second: end_index,
+            weight,
+        };
+    }
 }
 
 fn update_existing_edge(graph: &mut Graph, new_edge: Edge) -> bool {
@@ -94,8 +95,8 @@ pub fn construct_graph_from_edges(
             // self referential edge, discard
             continue;
         }
-        let new_edge = create_new_edge(start_index, end_index, weight);
-        let new_reverse_edge = create_new_edge(end_index, start_index, weight);
+        let new_edge = Edge::new(start_index, end_index, weight);
+        let new_reverse_edge = Edge::new(end_index, start_index, weight);
 
         let new_edge_is_updated = update_existing_edge(&mut graph, new_edge);
         // same in reverse, assuming bidirectionality of edges
@@ -134,9 +135,9 @@ mod graph_only_tests {
         let expected_graph = Graph::new(
             3,
             vec![
-                vec![create_new_edge(0, 2, 158), create_new_edge(0, 1, 17)],
-                vec![create_new_edge(1, 2, 45), create_new_edge(1, 0, 17)],
-                vec![create_new_edge(2, 0, 158), create_new_edge(2, 1, 45)],
+                vec![Edge::new(0, 2, 158), Edge::new(0, 1, 17)],
+                vec![Edge::new(1, 2, 45), Edge::new(1, 0, 17)],
+                vec![Edge::new(2, 0, 158), Edge::new(2, 1, 45)],
             ],
         );
 

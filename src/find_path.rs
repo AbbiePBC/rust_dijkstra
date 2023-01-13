@@ -202,9 +202,9 @@ mod tests {
     fn test_dijkstra() {
         let start_idx = 0;
         let end_idx = 2;
-        let edges_from_start = vec![create_new_edge(0, 1, 2)];
-        let edges_from_middle = vec![create_new_edge(2, 0, 2), create_new_edge(1, 2, 3)];
-        let edges_from_end = vec![create_new_edge(2, 1, 3)];
+        let edges_from_start = vec![Edge::new(0, 1, 2)];
+        let edges_from_middle = vec![Edge::new(2, 0, 2), Edge::new(1, 2, 3)];
+        let edges_from_end = vec![Edge::new(2, 1, 3)];
 
         let graph = Graph::new(3, vec![edges_from_start, edges_from_middle, edges_from_end]);
 
@@ -215,9 +215,9 @@ mod tests {
     fn test_multiple_start_edges() {
         let start_idx = 0;
         let end_idx = 2;
-        let edges_from_start = vec![create_new_edge(0, 1, 20), create_new_edge(0, 1, 2)];
-        let edges_from_middle = vec![create_new_edge(0, 1, 2), create_new_edge(1, 2, 3)];
-        let edges_from_end = vec![create_new_edge(2, 3, 1)];
+        let edges_from_start = vec![Edge::new(0, 1, 20), Edge::new(0, 1, 2)];
+        let edges_from_middle = vec![Edge::new(0, 1, 2), Edge::new(1, 2, 3)];
+        let edges_from_end = vec![Edge::new(2, 3, 1)];
 
         let graph = Graph::new(3, vec![edges_from_start, edges_from_middle, edges_from_end]);
 
@@ -230,9 +230,9 @@ mod tests {
 
         let expected_graph = Graph::new (3,
             vec![
-                vec![create_new_edge(0, 1, 2)],
-                vec![create_new_edge(1, 0, 2), create_new_edge(1, 2, 2)],
-                vec![create_new_edge(2, 1, 2)],
+                vec![Edge::new(0, 1, 2)],
+                vec![Edge::new(1, 0, 2), Edge::new(1, 2, 2)],
+                vec![Edge::new(2, 1, 2)],
             ]);
         let (dist, _) = dijkstra(0, 2, &expected_graph).unwrap();
         assert_eq!(dist, 4);
@@ -241,8 +241,8 @@ mod tests {
     fn test_edges_not_explicitly_in_both_directions() {
         let start_idx = 0;
         let end_idx = 2;
-        let edges_from_start = vec![create_new_edge(2, 1, 2)];
-        let edges_from_middle = vec![create_new_edge(1, 2, 3)];
+        let edges_from_start = vec![Edge::new(2, 1, 2)];
+        let edges_from_middle = vec![Edge::new(1, 2, 3)];
 
         let graph = Graph::new(3, vec![edges_from_start, edges_from_middle]);
 
@@ -255,19 +255,19 @@ mod tests {
         let end_idx = 4;
         let graph = Graph::new(5,
             vec![
-                vec![create_new_edge(0, 1, 10)],
+                vec![Edge::new(0, 1, 10)],
                 vec![
-                    create_new_edge(1, 0, 10),
-                    create_new_edge(1, 3, 9),
-                    create_new_edge(1, 2, 6),
+                    Edge::new(1, 0, 10),
+                    Edge::new(1, 3, 9),
+                    Edge::new(1, 2, 6),
                 ],
-                vec![create_new_edge(2, 3, 1)],
+                vec![Edge::new(2, 3, 1)],
                 vec![
-                    create_new_edge(3, 1, 9),
-                    create_new_edge(3, 2, 1),
-                    create_new_edge(3, 4, 1),
+                    Edge::new(3, 1, 9),
+                    Edge::new(3, 2, 1),
+                    Edge::new(3, 4, 1),
                 ],
-                vec![create_new_edge(4, 3, 1)],
+                vec![Edge::new(4, 3, 1)],
             ]);
         let (dist, path) = dijkstra(start_idx, end_idx, &graph).unwrap();
         assert_eq!(path, vec![0, 1, 2, 3, 4]);
@@ -277,8 +277,8 @@ mod tests {
     fn add_to_frontier_test() {
         let mut nodes_can_visit: BTreeMap<usize, Node> = BTreeMap::new();
         let nodes_visited: Vec<Node> = Vec::new();
-        let edge_to_add = create_new_edge(0, 1, 10);
-        let second_edge_to_add = create_new_edge(2, 1, 3);
+        let edge_to_add = Edge::new(0, 1, 10);
+        let second_edge_to_add = Edge::new(2, 1, 3);
 
         let start_idx = 0;
         add_to_frontier(
