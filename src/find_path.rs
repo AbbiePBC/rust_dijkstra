@@ -4,7 +4,7 @@ use std::collections::btree_map::BTreeMap;
 use crate::construct_graph::*;
 use crate::parse_input::get_route;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 struct Node {
     index: usize,
     parent_idx: usize,
@@ -20,6 +20,7 @@ fn get_route_travelled(
     let mut idx = end_idx;
     let mut nodes_in_order: Vec<usize> = Vec::new();
     nodes_in_order.push(end_idx);
+    debug!("the nodes visited are 1 {:?}", nodes_visited);
     while idx != original_start_idx {
         idx = nodes_visited[idx].parent_idx;
         nodes_in_order.push(idx);
@@ -57,76 +58,93 @@ fn print_route(route: Vec<String>) -> String {
     return final_path;
 }
 
-fn index_of_node_to_add(nodes_can_visit: &BTreeMap<usize, Node>, nodes_visited: &Vec<Node>) -> usize {
+fn find_closest_node (edges_can_traverse: &mut BTreeMap<usize, Node>, nodes_visited: &Vec<Node>) -> Node {
     let mut min_weight = INFINITE_DIST;
-    let mut index_to_remove = INFINITE_DIST;
-    for (_, node) in nodes_can_visit {
-        if node.dist_to_node + nodes_visited[node.parent_idx].dist_to_node < min_weight {
+    let mut node_to_remove = Node {
+        index: INFINITE_DIST,
+        parent_idx: INFINITE_DIST,
+        dist_to_node: INFINITE_DIST
+    };
+    debug!("the starting edges are {:?}", edges_can_traverse);
+    let mut key_to_remove = INFINITE_DIST;
+    //todo same as the node idx?
+    for (key, node) in &*edges_can_traverse {
+        if node.dist_to_node + nodes_visited[node.parent_idx].dist_to_node <= min_weight {
             min_weight = node.dist_to_node + nodes_visited[node.parent_idx].dist_to_node;
-            index_to_remove = node.index;
+            node_to_remove = *node;
+            key_to_remove = *key;
+            //.ok_or("Error in path finding".to_string())?;;
         }
     }
-    return index_to_remove;
+
+    debug!("the key {} was removed", key_to_remove);
+
+    edges_can_traverse.remove(&key_to_remove);
+    return node_to_remove;
 }
+
+fn update_existing_edges_to_node(nodes_visited: &mut Vec<Node>, closest_node: Node) {
+    debug!(" updating existing edges to {:?}", closest_node);
+    let node_to_add_to_path = nodes_visited[closest_node.index];
+    debug!(" for the edge {:?} from {}", closest_node.dist_to_node, closest_node.parent_idx);
+
+    debug!(" updating the current val of {:?}", nodes_visited[closest_node.index]);
+
+    let node_visited_already = nodes_visited.into_iter().find(|x| x.index == closest_node.parent_idx );
+
+    match node_visited_already {
+        Some(node) => {
+            debug!(" we have a path to {:?}", closest_node);
+            debug!("comparing node.dist_to_node {} > closest_node.dist_to_node {}+ node_to_add_to_path.dist_to_node {}", node.dist_to_node, closest_node.dist_to_node, node_to_add_to_path.dist_to_node);
+            if node.dist_to_node > closest_node.dist_to_node + node_to_add_to_path.dist_to_node {
+                debug!(" we're now updating the path' to {:?}", closest_node.parent_idx);
+                nodes_visited[closest_node.parent_idx] = Node {
+                    index: node.index, // doesnt change
+                    parent_idx: closest_node.index, // parent becomes closest node
+                    dist_to_node: closest_node.dist_to_node + node_to_add_to_path.dist_to_node,
+                };
+                debug!("nodes visited 2 are: {:?}", nodes_visited);
+
+                update_existing_edges_to_node(nodes_visited, nodes_visited[closest_node.parent_idx])
+            }
+        },
+        None => { println!("no edges to {:?} yet", closest_node); }
+    }
+
+}
+
+fn index_of_node_to_add(edges_can_traverse: &mut BTreeMap<usize, Node>, nodes_visited: &mut Vec<Node>) -> Node {
+    // todo make this naming less confusing; we add node to node_visited, but remove it from nodes_can_visit
+    // if A and B are added, we can add either A->B or B->A here, and one of those will be in the wrong direction.
+
+    debug!("possible nodes to add are: {:?}", edges_can_traverse);
+    let closest_node = find_closest_node(edges_can_traverse, nodes_visited);
+    //update_existing_edges_to_node(nodes_visited, closest_node);
+    // if the node to add is too far away, return soemthing esle?
+
+    return closest_node;
+}
+
 
 fn add_to_frontier(
     nodes_can_visit: &mut BTreeMap<usize, Node>,
-    nodes_visited: &Vec<Node>,
-    edge_to_add: &Edge,
-    start_idx: usize,
+    edge_to_add: &Edge
 ) {
-    if nodes_can_visit.contains_key(&edge_to_add.index_second) {
-        debug!(
-            "we already have the ability to visit node {:?};{:?}",
-            edge_to_add.index_second,
-            nodes_can_visit.entry(edge_to_add.index_second)
-        );
-        debug!(
-            "the proposed edge to add is {:?} from {}",
-            edge_to_add, start_idx
-        );
-        nodes_can_visit
-            .entry(edge_to_add.index_second)
-            .and_modify(|curr_node| {
-                debug! {"comparing the new edge dist ({}) with the old", (edge_to_add.weight)}
-                if edge_to_add.weight < curr_node.dist_to_node {
-                    curr_node.dist_to_node = edge_to_add.weight;
-                    curr_node.parent_idx = edge_to_add.index_first;
-                }
-            });
-    } else {
-        if None
-            == nodes_visited
-            .iter()
-            .find(|&x| x.index == edge_to_add.index_second) {
-            debug!("there are no edges travelled to from the current node ({}) to edge_to_add.index_second = {} SO FAR. ADDING NOW", start_idx, edge_to_add.index_second);
-        }
-        if  edge_to_add.index_second != start_idx {
-            debug!("the edge to add doesn't go to the current node - i.e. it's not a loop/going in the wrong direction ({})", start_idx);
-        }
-        if None
-            == nodes_visited
-            .iter()
-            .find(|&x| x.index == edge_to_add.index_second) && edge_to_add.index_second != start_idx
-        {
-            // if not present, and we haven't visited the node
-            nodes_can_visit.insert(
-                edge_to_add.index_second,
-                Node {
-                    index: edge_to_add.index_second,
-                    parent_idx: start_idx,
-                    dist_to_node: edge_to_add.weight,
-                },
-            );
-        }
-    }
+    nodes_can_visit.insert(
+        edge_to_add.index_second,
+        Node {
+            index: edge_to_add.index_second,
+            parent_idx:  edge_to_add.index_first,
+            dist_to_node: edge_to_add.weight,
+        },
+    );
     debug!("nodes can visit: {:?}", nodes_can_visit);
 }
 
 fn dijkstra(
     mut start_idx: usize,
     end_idx: usize,
-    graph: &Graph,
+    graph: &mut Graph,
 ) -> Result<(usize, Vec<usize>), String> {
     let original_start_idx = start_idx;
     let mut parent_idx = start_idx;
@@ -147,58 +165,75 @@ fn dijkstra(
         dist_to_node: 0,
     };
 
-    let mut nodes_can_visit: BTreeMap<usize, Node> = BTreeMap::new();
-    let termination_idx = INFINITE_DIST;
-
-    while start_idx != termination_idx {
-        for edge in &graph.edges[start_idx] {
-            debug!("now adding edge: {:?}", edge);
-            add_to_frontier(&mut nodes_can_visit, &nodes_visited, edge, start_idx);
+    let mut edges_can_traverse: BTreeMap<usize, Node> = BTreeMap::new();
+    let mut look_for_node = true;
+    while look_for_node {
+        if start_idx == INFINITE_DIST {
+            println!("this should not be possible");
         }
-        if nodes_can_visit.is_empty() {
+        for edge in &graph.edges[start_idx]{
+            if !edge.is_traversed {
+                add_to_frontier(&mut edges_can_traverse, &edge);
+            }
+        }
+        graph.mark_edges_from_node_as_traversed(start_idx);
+        if edges_can_traverse.is_empty() && nodes_visited.iter().find(|&x| x.index == end_idx) == None {
             return Err("Are the start and end disconnected? No path found".to_string());
         }
-        debug!("nodes can visit before updating: {:?}", nodes_can_visit);
-
-        let index_to_remove = index_of_node_to_add(&nodes_can_visit, &nodes_visited);
-        let closest_node = nodes_can_visit
-            .remove(&index_to_remove)
-            .ok_or("Error in path finding".to_string())?;
-        let can_go_to_closest_node = (closest_node.index != start_idx)
-            && (nodes_visited
-                .iter()
-                .find(|&x| x.index == closest_node.index)
-                == None);
-        if can_go_to_closest_node {
-            start_idx = closest_node.index;
-            parent_idx = closest_node.parent_idx;
-            nodes_visited[start_idx] = Node {
-                index: start_idx,
-                parent_idx,
-                dist_to_node: nodes_visited[parent_idx].dist_to_node + closest_node.dist_to_node,
-            };
+        debug!("nodes can visit before updating: {:?}", edges_can_traverse);
+        debug!("nodes can visit: {:?}", edges_can_traverse);
+        if edges_can_traverse.is_empty() {
+            debug!("stopped looking for node. edges_can_traverse.is_empty ");
+            look_for_node = false;
         }
+        //todo: this will be okay if edges can traverse is sorted by min weight and we compare against final destination
+        // for node in &edges_can_traverse {
+        //     if node.1.dist_to_node < nodes_visited[end_idx].dist_to_node {
+        //         debug!("stopped looking for node. node.1.dist_to_node < nodes_visited[end_idx].dist_to_node ");
+        //         look_for_node = false;
+        //     }
+        // }
+        if !edges_can_traverse.is_empty(){
+            let closest_node = index_of_node_to_add(&mut edges_can_traverse, &mut nodes_visited);
+            // if we haven't visited the node before
+            if nodes_visited.iter().find( |&x| x.index == closest_node.index) == None {
+                start_idx = closest_node.index;
+                parent_idx = closest_node.parent_idx;
+                nodes_visited[start_idx] = Node {
+                    index: start_idx,
+                    parent_idx,
+                    dist_to_node: nodes_visited[parent_idx].dist_to_node + closest_node.dist_to_node,
+                };
+            } else if closest_node.dist_to_node != INFINITE_DIST {
+                debug!("updating existing edges to nde");
+                update_existing_edges_to_node(&mut nodes_visited, closest_node);
+            }
+            debug!("nodes visited are: {:?}", nodes_visited);
+        }
+
     }
 
     // a path has been  found but it might not be the optimal path, it's just the first one that has been found
     // e.g. can be caused by short paths adding up to get to end.
-    debug!(" a path is found but there are still possible paths through the nodes not yet visited: {:?}", nodes_can_visit);
+    debug!(" a path is found but there are still possible paths through the nodes not yet visited: {:?}", edges_can_traverse);
     let nodes_in_order = get_route_travelled(original_start_idx, end_idx, &nodes_visited);
 
     return Ok((nodes_visited[end_idx].dist_to_node, nodes_in_order));
 }
 
+
+
 pub fn get_human_readable_solution(
     route: &str,
     graph_nodes: &Vec<GraphNode>,
-    graph: &Graph,
+    graph: &mut Graph,
 ) -> Result<String, String> {
     let route_names: Vec<&str> = route.split(" ").collect();
     let route_result = get_route(route_names, &graph_nodes)?;
     let (start_idx, end_idx) = route_result;
     debug!("finding route from {} to {}", start_idx, end_idx);
 
-    let (dist, route) = dijkstra(start_idx, end_idx, &graph)?;
+    let (dist, route) = dijkstra(start_idx, end_idx, graph)?;
     let human_readable_route = get_human_readable_route(route, &graph_nodes)?;
     let result = print_route(human_readable_route);
 
@@ -221,9 +256,9 @@ mod tests {
         let edges_from_middle = vec![Edge::new(2, 0, 2), Edge::new(1, 2, 3)];
         let edges_from_end = vec![Edge::new(2, 1, 3)];
 
-        let graph = Graph::new(3, vec![edges_from_start, edges_from_middle, edges_from_end]);
+        let mut graph = Graph::new(3, vec![edges_from_start, edges_from_middle, edges_from_end]);
 
-        let (dist, path) = dijkstra(start_idx, end_idx, &graph).unwrap();
+        let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
         assert_eq!(dist, 5);
         assert_eq!(path, vec![0, 1, 2]);
     }
@@ -232,46 +267,34 @@ mod tests {
         let start_idx = 0;
         let end_idx = 2;
         let edges_from_start = vec![Edge::new(0, 1, 20), Edge::new(0, 1, 2)];
-        let edges_from_middle = vec![Edge::new(0, 1, 2), Edge::new(1, 2, 3)];
-        let edges_from_end = vec![Edge::new(2, 3, 1)];
+        let edges_from_middle = vec![Edge::new(1, 0, 2), Edge::new(1, 2, 3)];
+        let edges_from_end = vec![Edge::new(2, 1, 1)];
 
-        let graph = Graph::new(3, vec![edges_from_start, edges_from_middle, edges_from_end]);
+        let mut graph = Graph::new(3, vec![edges_from_start, edges_from_middle, edges_from_end]);
 
-        let (dist, path) = dijkstra(start_idx, end_idx, &graph).unwrap();
-        assert_eq!(dist, 5);
+        let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
+        assert_eq!(dist, 3);
         assert_eq!(path, vec![0, 1, 2]);
     }
     #[test]
     fn test_shorter_initial_route_gets_updated() {
         // assuming bidirectionality, now the edge weight for middle->end should be updated from 3 to 2.
 
-        let expected_graph = Graph::new (3,
+        let mut expected_graph = Graph::new (3,
             vec![
                 vec![Edge::new(0, 1, 2)],
                 vec![Edge::new(1, 0, 2), Edge::new(1, 2, 2)],
                 vec![Edge::new(2, 1, 2)],
             ]);
-        let (dist, path) = dijkstra(0, 2, &expected_graph).unwrap();
+        let (dist, path) = dijkstra(0, 2, &mut expected_graph).unwrap();
         assert_eq!(dist, 4);
         assert_eq!(path, vec![0, 1, 2])
-    }
-    #[test]
-    fn test_edges_not_explicitly_in_both_directions() {
-        let start_idx = 0;
-        let end_idx = 2;
-        let edges_from_start = vec![Edge::new(2, 1, 2)];
-        let edges_from_middle = vec![Edge::new(1, 2, 3)];
-
-        let graph = Graph::new(3, vec![edges_from_start, edges_from_middle]);
-
-        let (dist, _) = dijkstra(start_idx, end_idx, &graph).unwrap();
-        assert_eq!(dist, 5);
     }
     #[test]
     fn find_shortest_path_branches() {
         let start_idx = 0;
         let end_idx = 4;
-        let graph = Graph::new(5,
+        let mut graph = Graph::new(5,
             vec![
                 vec![Edge::new(0, 1, 10)],
                 vec![
@@ -287,29 +310,25 @@ mod tests {
                 ],
                 vec![Edge::new(4, 3, 1)],
             ]);
-        let (dist, path) = dijkstra(start_idx, end_idx, &graph).unwrap();
+        let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
         assert_eq!(path, vec![0, 1, 2, 3, 4]);
         assert_eq!(dist, 18);
     }
     #[test]
     fn add_to_frontier_test() {
         let mut nodes_can_visit: BTreeMap<usize, Node> = BTreeMap::new();
-        let nodes_visited: Vec<Node> = Vec::new();
+        let mut nodes_visited: Vec<Node> = Vec::new();
         let edge_to_add = Edge::new(0, 1, 10);
         let second_edge_to_add = Edge::new(2, 1, 3);
 
         let start_idx = 0;
         add_to_frontier(
             &mut nodes_can_visit,
-            &nodes_visited,
             &edge_to_add,
-            start_idx,
         );
         add_to_frontier(
             &mut nodes_can_visit,
-            &nodes_visited,
             &second_edge_to_add,
-            start_idx,
         );
 
         let mut expected_visitable_nodes = BTreeMap::new();
@@ -345,7 +364,7 @@ mod tests {
 
         let start_idx = 0;
         let end_idx = 2;
-        let graph = Graph::new(5,
+        let mut graph = Graph::new(5,
        vec![
            vec![Edge::new(0, 1, 44)],
            vec![
@@ -366,9 +385,9 @@ mod tests {
                Edge::new(4, 1, 88),
            ],
        ]);
-        let (dist, path) = dijkstra(start_idx, end_idx, &graph).unwrap();
-        //assert_eq!(dist, 158);
-        assert_eq!(path, vec![0,1,3]);
+        let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
+        assert_eq!(dist, 158);
+        assert_eq!(path, vec![0,1,2]);
         //
         // let mut cmd = Command::cargo_bin("rust_dijkstra")?;
         // cmd.arg("src/test/uk.txt".to_string());

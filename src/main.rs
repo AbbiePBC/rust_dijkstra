@@ -35,17 +35,20 @@ fn main() -> Result<(), String> {
     }
     let (node_data, edge_data, routes_to_find) = read_input(contents.unwrap())?;
     let graph_nodes: Vec<GraphNode> = get_nodes(&node_data)?;
-    let graph = construct_graph_from_edges(&graph_nodes, &edge_data)?;
+    let mut graph = construct_graph_from_edges(&graph_nodes, &edge_data)?;
 
     debug!("graph: {:?}", graph);
 
     let routes: Vec<&str> = routes_to_find.trim().split("\n").collect();
     for route in routes {
         // todo: parallelise this &learn how to do threading in rust, for loop is slower
-        let result = get_human_readable_solution(route, &graph_nodes, &graph);
+        let result = get_human_readable_solution(route, &graph_nodes, &mut graph);
         match result {
             Err(err) => println!("An error occured on the path {}. Error: {}", route, err),
             Ok(_) => println!("{}", result.unwrap()),
+        }
+        for n in &graph_nodes {
+            graph.mark_edges_from_node_not_as_traversed(n.index);
         }
     }
 

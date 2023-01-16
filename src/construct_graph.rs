@@ -1,11 +1,13 @@
+use crate::get_nodes;
 use crate::parse_input::get_edge_info;
 pub const INFINITE_DIST: usize = 100000000;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Edge {
     pub index_first: usize,
     pub index_second: usize,
     pub weight: usize,
+    pub is_traversed: bool,
 }
 
 #[derive(Debug, PartialEq)]
@@ -28,17 +30,28 @@ impl Graph {
             edges: edges_,
         };
     }
+    pub(crate) fn mark_edges_from_node_as_traversed(&mut self, node_idx: usize){
+        for e in self.edges[node_idx].iter_mut(){
+            e.is_traversed = true;
+        }
+    }
+    pub(crate) fn mark_edges_from_node_not_as_traversed(&mut self, node_idx: usize){
+        for e in self.edges[node_idx].iter_mut(){
+            e.is_traversed = false;
+        }
+    }
 }
-
 impl Edge {
     pub(crate) fn new(start_index: usize, end_index: usize, weight: usize) -> Edge {
         return Edge {
             index_first: start_index,
             index_second: end_index,
             weight,
+            is_traversed: false
         };
     }
 }
+
 
 fn update_existing_edge(graph: &mut Graph, new_edge: Edge) -> bool {
     let start_index = new_edge.index_first;
