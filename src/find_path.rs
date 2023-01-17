@@ -11,6 +11,16 @@ pub(crate) struct Node {
     dist_to_node: usize,
 }
 
+impl Node {
+    pub(crate) fn new(index_: usize, parent_idx_: usize, dist_to_node_: usize) -> Node {
+        return Node {
+            index: index_,
+            parent_idx: parent_idx_,
+            dist_to_node: dist_to_node_
+        }
+    }
+}
+
 fn get_route_travelled(
     original_start_idx: usize,
     end_idx: usize,
@@ -64,11 +74,8 @@ fn find_closest_node(
     graph: &mut Graph,
 ) -> Node {
     let mut min_weight = INFINITE_DIST;
-    let mut node_to_remove = Node {
-        index: INFINITE_DIST,
-        parent_idx: INFINITE_DIST,
-        dist_to_node: INFINITE_DIST,
-    };
+    let mut node_to_remove = Node::new(INFINITE_DIST, INFINITE_DIST, INFINITE_DIST);
+
     //debug!("the starting edges are {:?}", edges_can_traverse);
     let mut key_to_remove = INFINITE_DIST;
     //todo same as the node idx?
@@ -108,12 +115,10 @@ fn update_existing_edges_to_node(nodes_visited: &mut Vec<Node>, closest_node: No
                     " we're now updating the path' to {:?}",
                     closest_node.parent_idx
                 );
-                nodes_visited[closest_node.parent_idx] = Node {
-                    index: node.index,              // doesnt change
-                    parent_idx: closest_node.index, // parent becomes closest node
-                    dist_to_node: closest_node.dist_to_node + node_to_add_to_path.dist_to_node,
-                };
-                //debug!("nodes visited 2 are: {:?}", nodes_visited);
+                nodes_visited[closest_node.parent_idx] = Node::new(node.index,closest_node.index, closest_node.dist_to_node + node_to_add_to_path.dist_to_node);
+                // todo the idea was to update the above rather than replace it.
+                // but now think we want to keep the nodes_visited and not overwrite data
+                // either way, revisit this
 
                 update_existing_edges_to_node(nodes_visited, nodes_visited[closest_node.parent_idx])
             }
@@ -144,11 +149,7 @@ fn index_of_node_to_add(
 fn add_to_frontier(nodes_can_visit: &mut BTreeMap<usize, Node>, edge_to_add: &Edge) {
     nodes_can_visit.insert(
         edge_to_add.index_second,
-        Node {
-            index: edge_to_add.index_second,
-            parent_idx: edge_to_add.index_first,
-            dist_to_node: edge_to_add.weight,
-        },
+        Node::new(edge_to_add.index_second,edge_to_add.index_first,edge_to_add.weight)
     );
     //debug!("nodes can visit: {:?}", nodes_can_visit);
 }
@@ -165,17 +166,9 @@ fn dijkstra(
     //todo: use a binary search tree here to avoid needing to allocate space for the whole vector.
     let mut nodes_visited: Vec<Node> = Vec::with_capacity(number_of_nodes);
     for _ in 0..number_of_nodes {
-        nodes_visited.push(Node {
-            index: INFINITE_DIST,
-            parent_idx: INFINITE_DIST,
-            dist_to_node: 0,
-        });
+        nodes_visited.push(Node::new(INFINITE_DIST, INFINITE_DIST, 0));
     }
-    nodes_visited[start_idx] = Node {
-        index: start_idx,
-        parent_idx,
-        dist_to_node: 0,
-    };
+    nodes_visited[start_idx] = Node::new(start_idx, parent_idx, 0);
 
     let mut edges_can_traverse: BTreeMap<usize, Node> = BTreeMap::new(); // can make this just contain edges probably
     let mut look_for_node = true;
@@ -209,12 +202,9 @@ fn dijkstra(
             {
                 start_idx = closest_node.index;
                 parent_idx = closest_node.parent_idx;
-                nodes_visited[closest_node.index] = Node {
-                    index: closest_node.index,
-                    parent_idx,
-                    dist_to_node: nodes_visited[parent_idx].dist_to_node
-                        + closest_node.dist_to_node,
-                };
+                nodes_visited[closest_node.index] = Node::new(closest_node.index,
+                    parent_idx, nodes_visited[parent_idx].dist_to_node
+                        + closest_node.dist_to_node);
             } else if closest_node.dist_to_node != INFINITE_DIST {
                 //debug!("updating existing edges to nde");
                 update_existing_edges_to_node(&mut nodes_visited, closest_node);
@@ -340,11 +330,7 @@ mod tests {
         let mut expected_visitable_nodes = BTreeMap::new();
         expected_visitable_nodes.insert(
             1,
-            Node {
-                index: 1,
-                parent_idx: 2,
-                dist_to_node: 3,
-            },
+            Node::new(1,2,3)
         );
         assert_eq!(nodes_can_visit, expected_visitable_nodes);
     }
