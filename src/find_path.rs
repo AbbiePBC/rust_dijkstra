@@ -3,6 +3,7 @@ use std::collections::btree_map::BTreeMap;
 
 use crate::construct_graph::*;
 use crate::parse_input::*;
+use std::{env, fs};
 
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub(crate) struct Node {
@@ -16,8 +17,8 @@ impl Node {
         return Node {
             index: index_,
             parent_idx: parent_idx_,
-            dist_to_node: dist_to_node_
-        }
+            dist_to_node: dist_to_node_,
+        };
     }
 }
 
@@ -81,7 +82,7 @@ fn find_closest_node(
     //todo same as the node idx?
     for (key, node) in &*edges_can_traverse {
         if node.dist_to_node + nodes_visited[node.parent_idx].dist_to_node <= min_weight {
-            min_weight = node.dist_to_node ; // + nodes_visited[node.parent_idx].dist_to_node
+            min_weight = node.dist_to_node; // + nodes_visited[node.parent_idx].dist_to_node
             node_to_remove = *node;
             key_to_remove = *key;
             //debug!("the key {} might be removed, which is node {:?}", key_to_remove, edges_can_traverse[&key_to_remove]);
@@ -115,7 +116,11 @@ fn update_existing_edges_to_node(nodes_visited: &mut Vec<Node>, closest_node: No
                     " we're now updating the path' to {:?}",
                     closest_node.parent_idx
                 );
-                nodes_visited[closest_node.parent_idx] = Node::new(node.index,closest_node.index, closest_node.dist_to_node + node_to_add_to_path.dist_to_node);
+                nodes_visited[closest_node.parent_idx] = Node::new(
+                    node.index,
+                    closest_node.index,
+                    closest_node.dist_to_node + node_to_add_to_path.dist_to_node,
+                );
                 // todo the idea was to update the above rather than replace it.
                 // but now think we want to keep the nodes_visited and not overwrite data
                 // either way, revisit this
@@ -145,11 +150,14 @@ fn index_of_node_to_add(
     return closest_node;
 }
 
-
 fn add_to_frontier(nodes_can_visit: &mut BTreeMap<usize, Node>, edge_to_add: &Edge) {
     nodes_can_visit.insert(
         edge_to_add.index_second,
-        Node::new(edge_to_add.index_second,edge_to_add.index_first,edge_to_add.weight)
+        Node::new(
+            edge_to_add.index_second,
+            edge_to_add.index_first,
+            edge_to_add.weight,
+        ),
     );
     //debug!("nodes can visit: {:?}", nodes_can_visit);
 }
@@ -202,9 +210,11 @@ fn dijkstra(
             {
                 start_idx = closest_node.index;
                 parent_idx = closest_node.parent_idx;
-                nodes_visited[closest_node.index] = Node::new(closest_node.index,
-                    parent_idx, nodes_visited[parent_idx].dist_to_node
-                        + closest_node.dist_to_node);
+                nodes_visited[closest_node.index] = Node::new(
+                    closest_node.index,
+                    parent_idx,
+                    nodes_visited[parent_idx].dist_to_node + closest_node.dist_to_node,
+                );
             } else if closest_node.dist_to_node != INFINITE_DIST {
                 //debug!("updating existing edges to nde");
                 update_existing_edges_to_node(&mut nodes_visited, closest_node);
@@ -251,8 +261,6 @@ pub fn get_human_readable_solution(
 mod tests {
     use super::*;
     use crate::parse_input;
-    use assert_cmd::Command;
-    use predicates::prelude::*;
 
     #[test]
     fn test_dijkstra() {
@@ -328,78 +336,42 @@ mod tests {
         add_to_frontier(&mut nodes_can_visit, &second_edge_to_add);
 
         let mut expected_visitable_nodes = BTreeMap::new();
-        expected_visitable_nodes.insert(
-            1,
-            Node::new(1,2,3)
-        );
+        expected_visitable_nodes.insert(1, Node::new(1, 2, 3));
         assert_eq!(nodes_can_visit, expected_visitable_nodes);
     }
 
     #[test]
     fn find_correct_route_in_file() -> Result<(), Box<dyn std::error::Error>> {
-        // 5
-        // Cardiff
-        // Bristol
-        // London
-        // York
-        // Birmingham
-        //
-        // 5
-        // York London 194
-        // Cardiff Bristol 44
-        // Bristol Birmingham 88
-        // Bristol London 114
-        // Birmingham London 111
-        //
-        // Cardiff London
-
         let start_idx = 0;
         let end_idx = 2;
-        let mut graph = Graph::new(
-            5,
-            vec![
-                vec![Edge::new(0, 1, 44)],
-                vec![
-                    Edge::new(1, 0, 44),
-                    Edge::new(1, 4, 88),
-                    Edge::new(1, 2, 114),
-                ],
-                vec![
-                    Edge::new(2, 3, 194),
-                    Edge::new(2, 1, 114),
-                    Edge::new(2, 4, 111),
-                ],
-                vec![Edge::new(3, 2, 194)],
-                vec![Edge::new(4, 2, 111), Edge::new(4, 1, 88)],
-            ],
-        );
+
+        let (node_data, edge_data, routes_to_find) = parse_input::read_input("5\nCardiff\nBristol\nLondon\nYork\nBirmingham\n\n5\nYork London 194\nCardiff Bristol 44\nBristol Birmingham 88\nBristol London 114\nBirmingham London 111\n\nCardiff London".to_string())?;
+        let graph_nodes: Vec<GraphNode> = parse_input::get_nodes(&node_data)?;
+        let mut graph = construct_graph_from_edges(&graph_nodes, &edge_data)?;
+
         let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
         assert_eq!(dist, 158);
         assert_eq!(path, vec![0, 1, 2]);
-        //
-        // let mut cmd = Command::cargo_bin("rust_dijkstra")?;
-        // cmd.arg("src/test/uk.txt".to_string());
-        // cmd.assert().success().stdout(predicate::str::contains(
-        //     "Route travelled: Cardiff>Bristol->London, with distance 45\n",
-        // ));
+        let route = get_human_readable_route(path, &graph_nodes).unwrap();
+        assert_eq!(print_route(route), "Cardiff->Bristol->London".to_string());
 
         Ok(())
-        //todo test more complex routes than this.
-        //test output when multiple paths have the same length.
     }
     #[test]
     fn find_correct_route_in_file_when_shorter_early_edge_is_wrong_path_simple(
     ) -> Result<(), Box<dyn std::error::Error>> {
         let start_idx = 3;
         let end_idx = 0;
-        let (node_data, edge_data, routes_to_find) = parse_input::read_input("4\nA\nB\nC\nD\n\n4\nA B 1\nB D 10\nA C 2\nC D 5\n\nA D".to_string())?;
+        let (node_data, edge_data, routes_to_find) = parse_input::read_input(
+            "4\nA\nB\nC\nD\n\n4\nA B 1\nB D 10\nA C 2\nC D 5\n\nA D".to_string(),
+        )?;
         let graph_nodes: Vec<GraphNode> = parse_input::get_nodes(&node_data)?;
         let mut graph = construct_graph_from_edges(&graph_nodes, &edge_data)?;
 
         let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
 
         assert_eq!(dist, 7);
-        assert_eq!(path, vec![3,2,0]);
+        assert_eq!(path, vec![3, 2, 0]);
 
         Ok(())
     }
@@ -439,22 +411,30 @@ mod tests {
         Ok(())
     }
     #[test]
-    fn find_self_referential_route_in_file() -> Result<(), Box<dyn std::error::Error>> {
-        let mut cmd = Command::cargo_bin("rust_dijkstra")?;
-        cmd.arg("src/test/edge-cases.txt".to_string());
-        cmd.assert().success().stdout(predicate::str::contains(
-            "Route is self referential. Dist from SelfReferential to SelfReferential = 0",
-        ));
-        Ok(())
+    fn find_self_referential_route_in_file() {
+        let contents = fs::read_to_string("src/test/edge-cases.txt".to_string());
+        let (node_data, edge_data, routes_to_find) =
+            parse_input::read_input(contents.unwrap()).unwrap();
+        let graph_nodes: Vec<GraphNode> = parse_input::get_nodes(&node_data).unwrap();
+        assert_eq!(
+            get_route(vec!["SelfReferential", "SelfReferential"], &graph_nodes),
+            Err(
+                "Route is self referential. Dist from SelfReferential to SelfReferential = 0"
+                    .to_string()
+            )
+        );
     }
     #[test]
-    fn find_disconnected_route_in_file() -> Result<(), Box<dyn std::error::Error>> {
-        let mut cmd = Command::cargo_bin("rust_dijkstra")?;
-        cmd.arg("src/test/edge-cases.txt".to_string());
+    fn find_disconnected_route_in_file() {
+        let contents = fs::read_to_string("src/test/edge-cases.txt".to_string());
+        let (node_data, edge_data, routes_to_find) =
+            parse_input::read_input(contents.unwrap()).unwrap();
+        let graph_nodes: Vec<GraphNode> = parse_input::get_nodes(&node_data).unwrap();
+        let mut graph = construct_graph_from_edges(&graph_nodes, &edge_data).unwrap();
 
-        cmd.assert().success().stdout(predicate::str::contains(
-            "Are the start and end disconnected? No path found",
-        ));
-        Ok(())
+        assert_eq!(
+            dijkstra(0, 4, &mut graph),
+            Err("Are the start and end disconnected? No path found".to_string())
+        );
     }
 }

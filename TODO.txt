@@ -20,11 +20,12 @@ Or maybe a constructor Graph::new_from_string(&str) -> Result<Graph>.
 Possibly use Vec<Vec<Weight>> and create functions that return full Edges (with start and end) when needed,
 or builder functions that ask for what the client wants and hide the internal structure.
 For example, `graph.create_new_edge(start, end, weight)` doesn't require the client to know the internal structure nor comply with the consistency constraint.
-[ ] In general, code should have modular functions that allow you to test the same without bothering about the full binary,
+[x] In general, code should have modular functions that allow you to test the same without bothering about the full binary,
 capturing stdout, or comparing human-readable strings. Something like `assert_eq!(dijkstra_from_file("src/test/uk.txt"), OK(("Glasgow", "Edinburgh", 45)));`,
 or using a custom enum instead of Result would convey the different error cases more clearly.
 [ ] improve readability dijkstra and add_to_frontier functions work.
 [ ] if possible, remove cyclic dependency of parse_input and construct_graph
+[ ] dijkstra_from_file(<path>) would be nice
 
 # Bug fix!
 [x] After fixing the bug in which the total dist from the start node was added rather than of an edge
@@ -37,3 +38,7 @@ Route travelled: London->Birmingham->Manchester->York->Newcastle->Edinburgh->Inv
 ^ this one still fails.
 194 + 82 + 107 + 158
 111 + 81 + 214 + 167 (London->Birmingham->Manchester->Glasgow->Inverness,)
+
+
+# Other
+[] practise using git to rename/squash old commits (e.g. `mend` after a failed amend)

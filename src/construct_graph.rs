@@ -61,13 +61,12 @@ impl Edge {
     }
 }
 
-
 impl GraphNode {
-    pub(crate) fn new (idx_: usize, name_: String) -> GraphNode {
+    pub(crate) fn new(idx_: usize, name_: String) -> GraphNode {
         return GraphNode {
             index: idx_,
             node_name: name_,
-        }
+        };
     }
 }
 
@@ -175,7 +174,7 @@ mod graph_only_tests {
         let graph_nodes = vec![
             GraphNode::new(0, "I".to_string()),
             GraphNode::new(1, "G".to_string()),
-            GraphNode::new(2, "E".to_string())
+            GraphNode::new(2, "E".to_string()),
         ];
         return (contents, expected_graph, graph_nodes);
     }
