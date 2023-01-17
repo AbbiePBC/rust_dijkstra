@@ -173,6 +173,8 @@ fn dijkstra(
     let number_of_nodes = graph.number_of_nodes;
     //todo: use a binary search tree here to avoid needing to allocate space for the whole vector.
     let mut nodes_visited: Vec<Node> = Vec::with_capacity(number_of_nodes);
+    // nodes_visited should be turned into a Vec<Vec<Nodes>>, so that nodes_visited[node_index] = path that node.
+    // then we can find the path with the min dist, by the dist to the end node following that path.
     for _ in 0..number_of_nodes {
         nodes_visited.push(Node::new(INFINITE_DIST, INFINITE_DIST, 0));
     }
@@ -181,43 +183,37 @@ fn dijkstra(
     let mut edges_can_traverse: BTreeMap<usize, Node> = BTreeMap::new(); // can make this just contain edges probably
     let mut look_for_node = true;
     while look_for_node {
-        if start_idx == INFINITE_DIST {
-            println!("this should not be possible");
-        }
-        for edge in &graph.edges[start_idx] {
-            if !edge.is_traversed {
-                add_to_frontier(&mut edges_can_traverse, &edge);
-            }
-        }
-        debug!("edges can traverse {:?}", edges_can_traverse);
+        add_to_frontier_edges_from_node(graph, start_idx, &mut edges_can_traverse);
+
         if edges_can_traverse.is_empty() {
             if nodes_visited.iter().find(|&x| x.index == end_idx) == None {
                 return Err("Are the start and end disconnected? No path found".to_string());
             } else {
-                debug!("stopped looking for node. edges_can_traverse.is_empty ");
+                debug!("stopped looking for node. edges_can_traverse.is_empty");
                 look_for_node = false;
             }
-        }
-        if !edges_can_traverse.is_empty() {
+        } else {
             let closest_node =
                 index_of_node_to_add(&mut edges_can_traverse, &mut nodes_visited, graph);
             graph.mark_edge_as_traversed(closest_node);
-            // if we haven't visited the node before
-            if nodes_visited
+            match nodes_visited
                 .iter()
                 .find(|&x| x.index == closest_node.index)
-                == None
             {
-                start_idx = closest_node.index;
-                parent_idx = closest_node.parent_idx;
-                nodes_visited[closest_node.index] = Node::new(
-                    closest_node.index,
-                    parent_idx,
-                    nodes_visited[parent_idx].dist_to_node + closest_node.dist_to_node,
-                );
-            } else if closest_node.dist_to_node != INFINITE_DIST {
-                //debug!("updating existing edges to nde");
-                update_existing_edges_to_node(&mut nodes_visited, closest_node);
+                None => {
+                    start_idx = closest_node.index;
+                    nodes_visited[closest_node.index] = Node::new(
+                        closest_node.index,
+                        closest_node.parent_idx,
+                        nodes_visited[closest_node.parent_idx].dist_to_node + closest_node.dist_to_node,
+                    );
+                }
+                Some(node) => {
+                    if closest_node.dist_to_node != INFINITE_DIST {
+                        //debug!("updating existing edges to nde");
+                        update_existing_edges_to_node(&mut nodes_visited, closest_node);
+                    }
+                }
             }
             debug!("nodes visited are: {:?}", nodes_visited);
             debug!(
@@ -237,6 +233,20 @@ fn dijkstra(
     return Ok((nodes_visited[end_idx].dist_to_node, nodes_in_order));
 }
 
+fn add_to_frontier_edges_from_node(
+    graph: &mut Graph,
+    start_idx: usize,
+    edges_can_traverse: &mut BTreeMap<usize, Node>,
+) {
+    for edge in &graph.edges[start_idx] {
+        if !edge.is_traversed {
+            add_to_frontier(edges_can_traverse, &edge);
+        }
+    }
+
+    debug!("edges can traverse {:?}", edges_can_traverse);
+}
+
 pub fn get_human_readable_solution(
     route: &str,
     graph_nodes: &Vec<GraphNode>,
@@ -245,7 +255,6 @@ pub fn get_human_readable_solution(
     let route_names: Vec<&str> = route.split(" ").collect();
     let route_result = get_route(route_names, &graph_nodes)?;
     let (start_idx, end_idx) = route_result;
-    //debug!("finding route from {} to {}", start_idx, end_idx);
 
     let (dist, route) = dijkstra(start_idx, end_idx, graph)?;
     let human_readable_route = get_human_readable_route(route, &graph_nodes)?;
