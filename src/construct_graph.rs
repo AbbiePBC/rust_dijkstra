@@ -1,6 +1,8 @@
 use crate::get_nodes;
 use crate::parse_input::get_edge_info;
 pub const INFINITE_DIST: usize = 100000000;
+use crate::find_path::Node;
+use log::debug;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Edge {
@@ -30,28 +32,34 @@ impl Graph {
             edges: edges_,
         };
     }
-    pub(crate) fn mark_edges_from_node_as_traversed(&mut self, node_idx: usize){
-        for e in self.edges[node_idx].iter_mut(){
-            e.is_traversed = true;
+    pub(crate) fn mark_edge_as_traversed(&mut self, node: Node) {
+        for e in self.edges[node.parent_idx].iter_mut() {
+            //debug!("e  - {:?}",e);
+            if e.index_second == node.index && e.index_first == node.parent_idx {
+                e.is_traversed = true;
+                //debug!("marked edge as traversed  - {:?}",e);
+            }
         }
     }
-    pub(crate) fn mark_edges_from_node_not_as_traversed(&mut self, node_idx: usize){
-        for e in self.edges[node_idx].iter_mut(){
-            e.is_traversed = false;
+    pub(crate) fn mark_all_edges_as_not_traversed(&mut self) {
+        for node_idx in self.edges.iter_mut() {
+            for edge in node_idx.iter_mut() {
+                edge.is_traversed = false;
+            }
         }
     }
 }
+
 impl Edge {
     pub(crate) fn new(start_index: usize, end_index: usize, weight: usize) -> Edge {
         return Edge {
             index_first: start_index,
             index_second: end_index,
             weight,
-            is_traversed: false
+            is_traversed: false,
         };
     }
 }
-
 
 fn update_existing_edge(graph: &mut Graph, new_edge: Edge) -> bool {
     let start_index = new_edge.index_first;
@@ -100,7 +108,7 @@ pub fn construct_graph_from_edges(
     for _ in 0..num_nodes {
         vec.push(Vec::with_capacity(num_nodes));
     }
-    let mut graph = Graph::new(graph_nodes.len(),vec);
+    let mut graph = Graph::new(graph_nodes.len(), vec);
 
     for i in 1..(num_edges + 1) {
         let (start_index, end_index, weight) = get_edge_info(edges[i], graph_nodes)?;

@@ -47,9 +47,7 @@ fn main() -> Result<(), String> {
             Err(err) => println!("An error occured on the path {}. Error: {}", route, err),
             Ok(_) => println!("{}", result.unwrap()),
         }
-        for n in &graph_nodes {
-            graph.mark_edges_from_node_not_as_traversed(n.index);
-        }
+        graph.mark_all_edges_as_not_traversed();
     }
 
     Ok(())

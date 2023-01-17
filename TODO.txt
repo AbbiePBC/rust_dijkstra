@@ -21,14 +21,19 @@ Possibly use Vec<Vec<Weight>> and create functions that return full Edges (with 
 or builder functions that ask for what the client wants and hide the internal structure.
 For example, `graph.create_new_edge(start, end, weight)` doesn't require the client to know the internal structure nor comply with the consistency constraint.
 [ ] In general, code should have modular functions that allow you to test the same without bothering about the full binary,
-capturing stdout, or comparing human-readable strings. Something like `assert_eq!(dikjstra_from_file("src/test/uk.txt"), OK(("Glasgow", "Edinburgh", 45)));`,
+capturing stdout, or comparing human-readable strings. Something like `assert_eq!(dijkstra_from_file("src/test/uk.txt"), OK(("Glasgow", "Edinburgh", 45)));`,
 or using a custom enum instead of Result would convey the different error cases more clearly.
 [ ] improve readability dijkstra and add_to_frontier functions work.
 [ ] if possible, remove cyclic dependency of parse_input and construct_graph
 
 # Bug fix!
-[ ] After fixing the bug in which the total dist from the start node was added rather than of an edge
+[x] After fixing the bug in which the total dist from the start node was added rather than of an edge
 the results are different
 Route travelled: Cardiff->Bristol->Birmingham->London, with distance 243 (previously Cardiff->Bristol->London 158)
-Route travelled: York->Manchester->Birmingham, with distance 146 (previously York->Birmingham 126)
-Route travelled: London->Birmingham->Manchester->York->Newcastle->Edinburgh->Inverness, with distance 604 (London->York->Newcastle->Edinburgh->Inverness 541)
+Route travelled: York->Manchester->Birmingham, with distance 146 (previously York->Birmingham 129)
+[ ] There is a bug where the path is overwritten so we lose all knowledge of previous paths that may have been present
+This can be fixed by storing in nodes_visited all possible paths to nodes, and choosing which path is selected with a bool
+Route travelled: London->Birmingham->Manchester->York->Newcastle->Edinburgh->Inverness, with distance 604 (London->York->Newcastle->Edinburgh->Inverness 541) / 573?
+^ this one still fails.
+194 + 82 + 107 + 158
+111 + 81 + 214 + 167 (London->Birmingham->Manchester->Glasgow->Inverness,)

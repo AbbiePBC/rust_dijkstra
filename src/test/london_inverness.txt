@@ -1,4 +1,4 @@
-10
+8
 Inverness
 Glasgow
 Edinburgh
@@ -6,11 +6,9 @@ Newcastle
 Manchester
 York
 Birmingham
-Cardiff
-Bristol
 London
 
-16
+12
 Inverness Glasgow 167
 Inverness Edinburgh 158
 Glasgow Edinburgh 45
@@ -21,14 +19,7 @@ Newcastle York 82
 Manchester York 65
 Manchester Birmingham 81
 York Birmingham 129
-Manchester Cardiff 173
 York London 194
-Cardiff Bristol 44
-Bristol Birmingham 88
-Bristol London 114
 Birmingham London 111
 
-Glasgow Edinburgh
-Cardiff London
-York Birmingham
 London Inverness
