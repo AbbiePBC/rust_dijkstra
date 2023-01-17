@@ -115,7 +115,7 @@ fn update_existing_edges_to_node(nodes_visited: &mut Vec<Node>, closest_node: No
                 };
                 //debug!("nodes visited 2 are: {:?}", nodes_visited);
 
-                update_existing_edges_to_node(nodes_visited, nodes_visited[closest_node.parent_index])
+                update_existing_edges_to_node(nodes_visited, nodes_visited[closest_node.parent_idx])
             }
         }
         None => {
@@ -139,6 +139,7 @@ fn index_of_node_to_add(
 
     return closest_node;
 }
+
 
 fn add_to_frontier(nodes_can_visit: &mut BTreeMap<usize, Node>, edge_to_add: &Edge) {
     nodes_can_visit.insert(
@@ -187,15 +188,14 @@ fn dijkstra(
                 add_to_frontier(&mut edges_can_traverse, &edge);
             }
         }
-        if edges_can_traverse.is_empty()
-            && nodes_visited.iter().find(|&x| x.index == end_idx) == None
-        {
-            return Err("Are the start and end disconnected? No path found".to_string());
-        }
         debug!("edges can traverse {:?}", edges_can_traverse);
         if edges_can_traverse.is_empty() {
-            debug!("stopped looking for node. edges_can_traverse.is_empty ");
-            look_for_node = false;
+            if nodes_visited.iter().find(|&x| x.index == end_idx) == None {
+                return Err("Are the start and end disconnected? No path found".to_string());
+            } else {
+                debug!("stopped looking for node. edges_can_traverse.is_empty ");
+                look_for_node = false;
+            }
         }
         if !edges_can_traverse.is_empty() {
             let closest_node =
@@ -232,9 +232,6 @@ fn dijkstra(
         get_route_travelled(original_start_idx, start_idx, &nodes_visited)
     );
 
-    // a path has been  found but it might not be the optimal path, it's just the first one that has been found
-    // e.g. can be caused by short paths adding up to get to end.
-    //debug!(" a path is found but there are still possible paths through the nodes not yet visited: {:?}", edges_can_traverse);
     let nodes_in_order = get_route_travelled(original_start_idx, end_idx, &nodes_visited);
 
     return Ok((nodes_visited[end_idx].dist_to_node, nodes_in_order));

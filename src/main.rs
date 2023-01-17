@@ -44,7 +44,7 @@ fn main() -> Result<(), String> {
         // todo: parallelise this &learn how to do threading in rust, for loop is slower
         let result = get_human_readable_solution(route, &graph_nodes, &mut graph);
         match result {
-            Err(err) => println!("An error occured on the path {}. Error: {}", route, err),
+            Err(err) => println!("An error occurred on the path {}. Error: {}", route, err),
             Ok(_) => println!("{}", result.unwrap()),
         }
         graph.mark_all_edges_as_not_traversed();
