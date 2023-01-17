@@ -14,7 +14,7 @@
 [ ] group the parsing functions under a module, and put that under the graph module,
 and have a single "parse" function that generates a graph from a string.
 Or maybe a constructor Graph::new_from_string(&str) -> Result<Graph>.
-[ ] functions like create_new_edge would fit quite nicely as a constructor (static method).
+[x] functions like create_new_edge would fit quite nicely as a constructor (static method).
  For example, `impl Edge { pub fn new(...) -> Edge { ... }}`.
 [ ] the graph design has redundancy constraint (and Edge e has to be contained in `graph.edges[e.start]`).
 Possibly use Vec<Vec<Weight>> and create functions that return full Edges (with start and end) when needed,

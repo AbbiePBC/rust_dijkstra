@@ -26,10 +26,7 @@ pub fn get_nodes(node_data: &str) -> Result<Vec<GraphNode>, String> {
     let mut graph_nodes = Vec::with_capacity(num_nodes);
 
     for i in 1..(num_nodes + 1) {
-        graph_nodes.push(GraphNode {
-            index: i - 1,
-            node_name: nodes[i].to_string(),
-        });
+        graph_nodes.push(GraphNode::new(i - 1, nodes[i].to_string()));
     }
 
     debug!("graph nodes: {:?}", graph_nodes);
@@ -118,18 +115,9 @@ mod input_tests {
     #[test]
     fn test_route_extraction() {
         let graph_nodes = vec![
-            GraphNode {
-                index: 0,
-                node_name: "Inverness".to_string(),
-            },
-            GraphNode {
-                index: 1,
-                node_name: "Glasgow".to_string(),
-            },
-            GraphNode {
-                index: 2,
-                node_name: "Edinburgh".to_string(),
-            },
+            GraphNode::new(0, "Inverness".to_string()),
+            GraphNode::new(1, "Glasgow".to_string()),
+            GraphNode::new(2, "Edinburgh".to_string()),
         ];
 
         let (start_idx, end_idx) = get_route(vec!["Glasgow", "Edinburgh"], &graph_nodes).expect("");
