@@ -13,9 +13,10 @@ impl GraphNode {
             node_name: name_,
         };
     }
+
 }
 
-pub fn read_input(contents: String) -> Result<(String, String, String), String> {
+pub fn split_contents_into_nodes_edges_routes(contents: String) -> Result<(String, String, String), String> {
     let data: Vec<&str> = contents.split("\n\n").collect();
     if data.len() != 3 {
         return Err("Invalid file format.".to_string());
@@ -41,7 +42,7 @@ pub fn get_node_index_from_node_name(
     }
 }
 
-pub fn get_nodes(node_data: &str) -> Result<Vec<GraphNode>, String> {
+pub fn parse_graph_nodes_from_string(node_data: &str) -> Result<Vec<GraphNode>, String> {
     let nodes: Vec<&str> = node_data.split("\n").collect();
     let num_nodes: usize = nodes[0]
         .parse::<usize>()
@@ -62,8 +63,7 @@ pub fn get_nodes(node_data: &str) -> Result<Vec<GraphNode>, String> {
     return Ok(graph_nodes);
 }
 
-// todo rename the 'get' functions
-pub fn get_edges(edge_data: &str) -> Result<Vec<&str>, String> {
+pub fn parse_edges_from_string(edge_data: &str, graph_nodes: &Vec<GraphNode>) -> Result<Vec<(usize, usize, usize)>, String> {
     let edges: Vec<&str> = edge_data.split("\n").collect();
     let num_edges: usize = edges[0]
         .parse::<usize>()
@@ -76,34 +76,34 @@ pub fn get_edges(edge_data: &str) -> Result<Vec<&str>, String> {
             edges.len() - 1,
         ));
     }
-    return Ok(edges);
-}
 
-pub fn get_edge_info(
-    edge: &str,
-    graph_nodes: &Vec<GraphNode>,
-) -> Result<(usize, usize, usize), String> {
-    let edge_info: Vec<&str> = edge.split(" ").collect();
-    if edge_info.len() != 3 {
-        return Err(format!(
-            "Edge {:?} is invalid. Please check the input.",
-            edge_info
+    let mut useful_edges = Vec::with_capacity(num_edges-1);
+
+    for idx in 1..edges.len() {
+        let edge_info: Vec<&str> = edges[idx].split(" ").collect();
+        if edge_info.len() != 3 {
+            return Err(format!(
+                "Edge {:?} is invalid. Please check the input.",
+                edge_info
+            ));
+        }
+        let start_edge = edge_info[0];
+        let end_edge = edge_info[1];
+        let edge_weight = edge_info[2].parse::<usize>().expect(&format!(
+            "Distance between edges should be an integer, {} found.",
+            edge_info[2]
         ));
+
+        let start_index = get_node_index_from_node_name(start_edge, graph_nodes)?;
+        let end_index = get_node_index_from_node_name(end_edge, graph_nodes)?;
+        useful_edges.push((start_index, end_index, edge_weight));
     }
-    let start_edge = edge_info[0];
-    let end_edge = edge_info[1];
-    let edge_weight = edge_info[2].parse::<usize>().expect(&format!(
-        "Distance between edges should be an integer, {} found.",
-        edge_info[2]
-    ));
 
-    let start_index = get_node_index_from_node_name(start_edge, graph_nodes)?;
-    let end_index = get_node_index_from_node_name(end_edge, graph_nodes)?;
 
-    return Ok((start_index, end_index, edge_weight));
+    return Ok(useful_edges);
 }
 
-pub fn get_route(
+pub fn parse_route_from_string (
     first_route: Vec<&str>,
     graph_nodes: &Vec<GraphNode>,
 ) -> Result<(usize, usize), String> {
@@ -137,24 +137,24 @@ mod input_tests {
         let incorrect_contents: String = "incorrectly formatted input".to_string();
         assert_eq!(
             Err("Invalid file format.".to_string()),
-            read_input(incorrect_contents)
+            split_contents_into_nodes_edges_routes(incorrect_contents)
         );
         let contents_no_routes: String = "2\nA\nB\n\n1\nA B 1".to_string();
         assert_eq!(
             Err("Invalid file format.".to_string()),
-            read_input(contents_no_routes)
+            split_contents_into_nodes_edges_routes(contents_no_routes)
         );
         let contents_wrong_delimiters_edge =
             "3\nI\nG\nE\n\n4\nI G 167\nI E 158\nG,E,45\nI G 17\n\nG E\nE I\n\n".to_string();
         assert_eq!(
             Err("Invalid file format.".to_string()),
-            read_input(contents_wrong_delimiters_edge)
+            split_contents_into_nodes_edges_routes(contents_wrong_delimiters_edge)
         );
         let contents_wrong_delimiters_route =
             "3\nI\nG\nE\n\n4\nI G 167\nI E 158\nG E 45\nI G 17\n\nG,E\nE I\n\n".to_string();
         assert_eq!(
             Err("Invalid file format.".to_string()),
-            read_input(contents_wrong_delimiters_route)
+            split_contents_into_nodes_edges_routes(contents_wrong_delimiters_route)
         );
     }
     #[test]
@@ -165,7 +165,7 @@ mod input_tests {
             GraphNode::new(2, "Edinburgh".to_string()),
         ];
 
-        let (start_idx, end_idx) = get_route(vec!["Glasgow", "Edinburgh"], &graph_nodes).expect("");
+        let (start_idx, end_idx) = parse_route_from_string(vec!["Glasgow", "Edinburgh"], &graph_nodes).expect("");
         assert_eq!(start_idx, 1);
         assert_eq!(end_idx, 2);
     }

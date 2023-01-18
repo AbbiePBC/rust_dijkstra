@@ -4,7 +4,7 @@ mod parse_input;
 
 use crate::construct_graph::Graph;
 use crate::find_path::{dijkstra, get_human_readable_route, print_route};
-use crate::parse_input::{get_nodes, read_input};
+use crate::parse_input::{parse_graph_nodes_from_string, split_contents_into_nodes_edges_routes};
 
 use log::debug;
 use std::{env, fs};

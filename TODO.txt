@@ -6,7 +6,7 @@
 [x] &str should be used instead of String for read-only strings.
 [x] print path if doesn't exist
 [x] error out if incorrect number of nodes is provided
-[ ] use more specific naming rather than get_node() // leaving this for now incase it becomes a method
+[x] use more specific naming rather than get_node()
 [x] test_shorter_initial_route_gets_updated is testing 2 things; use the expected graph instead of the parsed one.
 [x] rename reverse_sort() lol
 

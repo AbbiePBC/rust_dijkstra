@@ -1,4 +1,4 @@
-use crate::parse_input::{get_edge_info, get_edges, get_route, GraphNode, get_nodes, read_input};
+use crate::parse_input::{parse_edges_from_string, parse_route_from_string, GraphNode, parse_graph_nodes_from_string, split_contents_into_nodes_edges_routes};
 pub const INFINITE_DIST: usize = 100000000;
 
 use log::debug;
@@ -48,11 +48,12 @@ impl Graph {
     }
 
     pub(crate) fn new_from_string(contents: &str) -> Result<Graph, String> {
-        let (node_data, edge_data, routes_to_find) = read_input(contents.to_string())?;
+        let (node_data, edge_data, routes_to_find) = split_contents_into_nodes_edges_routes(contents.to_string())?;
 
-        let edges: Vec<&str> = get_edges(&edge_data)?; // todo: this doesnt really get edges but gets strings
-        let graph_nodes = get_nodes(&node_data)?;
+        let graph_nodes = parse_graph_nodes_from_string(&node_data)?;
         let num_nodes = graph_nodes.len();
+
+        let edges= parse_edges_from_string(&edge_data, &graph_nodes)?;
 
         let mut vec: Vec<Vec<Edge>> = Vec::with_capacity(num_nodes);
         for _ in 0..num_nodes {
@@ -62,9 +63,9 @@ impl Graph {
         let mut graph = Graph::new(graph_nodes.len(), vec);
         graph.graph_nodes = graph_nodes;
 
-        for i in 1..(edges.len()) {
-            let (start_index, end_index, weight) =
-                get_edge_info(edges[i], &graph.graph_nodes.clone())?;
+        for edge in edges {
+            let (start_index, end_index, weight) = edge;
+
             if start_index == end_index {
                 // self referential edge, discard
                 continue;
@@ -79,7 +80,7 @@ impl Graph {
             println!("route to find: {:?}", route);
 
             let route_names: Vec<&str> = route.split(" ").collect();
-            let route_result = get_route(route_names, &graph.graph_nodes.clone())?;
+            let route_result = parse_route_from_string(route_names, &graph.graph_nodes.clone())?;
             graph.routes_to_find.push(route_result);
         }
         return Ok(graph);
@@ -156,7 +157,7 @@ impl Edge {
 mod graph_only_tests {
     use super::*;
     use crate::construct_graph::Graph;
-    use crate::get_nodes;
+    use crate::parse_graph_nodes_from_string;
 
     fn set_up_tests() -> (String, Graph, Vec<GraphNode>) {
         let contents =
