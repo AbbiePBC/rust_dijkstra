@@ -1,10 +1,24 @@
-use crate::parse_input::{get_edge_info, get_edges, get_route};
-use crate::{get_nodes, read_input};
+use crate::parse_input::{get_edge_info, get_edges, get_route, GraphNode, get_nodes, read_input};
 pub const INFINITE_DIST: usize = 100000000;
-use crate::find_path::Node;
 
-use crate::parse_input::GraphNode;
 use log::debug;
+
+#[derive(Debug, Clone, PartialEq, Copy)]
+pub(crate) struct Node {
+    pub index: usize,
+    pub parent_idx: usize,
+    pub dist_to_node: usize,
+}
+
+impl Node {
+    pub(crate) fn new(index_: usize, parent_idx_: usize, dist_to_node_: usize) -> Node {
+        return Node {
+            index: index_,
+            parent_idx: parent_idx_,
+            dist_to_node: dist_to_node_,
+        };
+    }
+}
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Edge {
@@ -33,7 +47,7 @@ impl Graph {
         };
     }
 
-    pub(crate) fn parse_from_string(contents: &str) -> Result<Graph, String> {
+    pub(crate) fn new_from_string(contents: &str) -> Result<Graph, String> {
         let (node_data, edge_data, routes_to_find) = read_input(contents.to_string())?;
 
         let edges: Vec<&str> = get_edges(&edge_data)?; // todo: this doesnt really get edges but gets strings
@@ -173,7 +187,7 @@ mod graph_only_tests {
     // }
     #[test]
     fn test_route_finding_with_incorrect_number_of_nodes() {
-        let graph = Graph::parse_from_string(
+        let graph = Graph::new_from_string(
             "4\nI\nG\n\n4\nI G 167\nI E 158\nG E 45\nI G 17\nE I 1\n\nI E",
         );
 
@@ -185,7 +199,7 @@ mod graph_only_tests {
     #[test]
     fn test_route_finding_with_incorrect_nodes() {
         let graph =
-            Graph::parse_from_string("4\nA\nB\nC\nD\n\n4\nI G 167\nI E 158\nG E 45\nI N 17\n\nA B");
+            Graph::new_from_string("4\nA\nB\nC\nD\n\n4\nI G 167\nI E 158\nG E 45\nI N 17\n\nA B");
         assert_eq!(
             Err("Nodes in edges should be present in node list. Node I (possibly others) not found.".to_string()),
             graph

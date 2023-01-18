@@ -33,7 +33,7 @@ fn main() -> Result<(), String> {
             )
         }
         Ok(file_path) => {
-            let mut graph = Graph::parse_from_string(&file_path)?;
+            let mut graph = Graph::new_from_string(&file_path)?;
 
             debug!("graph: {:?}", graph);
             let graph_nodes = graph.graph_nodes.clone();

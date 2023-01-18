@@ -11,7 +11,7 @@
 [x] rename reverse_sort() lol
 
 # Design comments
-[ ] group the parsing functions under a module, and put that under the graph module,
+[x] group the parsing functions under a module, and put that under the graph module,
 and have a single "parse" function that generates a graph from a string.
 Or maybe a constructor Graph::new_from_string(&str) -> Result<Graph>.
 [x] functions like create_new_edge would fit quite nicely as a constructor (static method).
@@ -23,8 +23,9 @@ For example, `graph.create_new_edge(start, end, weight)` doesn't require the cli
 [x] In general, code should have modular functions that allow you to test the same without bothering about the full binary,
 capturing stdout, or comparing human-readable strings. Something like `assert_eq!(dijkstra_from_file("src/test/uk.txt"), OK(("Glasgow", "Edinburgh", 45)));`,
 or using a custom enum instead of Result would convey the different error cases more clearly.
-[ ] improve readability dijkstra and add_to_frontier functions work.
-[ ] if possible, remove cyclic dependency of parse_input and construct_graph
+[ ] improve readability of how dijkstra and add_to_frontier functions work.
+[x] if possible, remove cyclic dependency of parse_input and construct_graph
+//edit: now, main->find_path, construct_graph, parse_input; find_path->construct_graph, parse_input; construct_graph->parse_input.
 [ ] dijkstra_from_file(<path>) would be nice
 
 # Bug fix!

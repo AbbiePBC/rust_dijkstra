@@ -5,22 +5,6 @@ use crate::construct_graph::*;
 use crate::parse_input::*;
 use std::fs;
 
-#[derive(Debug, Clone, PartialEq, Copy)]
-pub(crate) struct Node {
-    pub index: usize,
-    pub parent_idx: usize,
-    dist_to_node: usize,
-}
-
-impl Node {
-    pub(crate) fn new(index_: usize, parent_idx_: usize, dist_to_node_: usize) -> Node {
-        return Node {
-            index: index_,
-            parent_idx: parent_idx_,
-            dist_to_node: dist_to_node_,
-        };
-    }
-}
 
 fn get_route_travelled(
     original_start_idx: usize,
@@ -336,7 +320,7 @@ mod tests {
         let start_idx = 0;
         let end_idx = 2;
 
-        let mut graph = Graph::parse_from_string("5\nCardiff\nBristol\nLondon\nYork\nBirmingham\n\n5\nYork London 194\nCardiff Bristol 44\nBristol Birmingham 88\nBristol London 114\nBirmingham London 111\n\nCardiff London").unwrap();
+        let mut graph = Graph::new_from_string("5\nCardiff\nBristol\nLondon\nYork\nBirmingham\n\n5\nYork London 194\nCardiff Bristol 44\nBristol Birmingham 88\nBristol London 114\nBirmingham London 111\n\nCardiff London").unwrap();
         let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
         assert_eq!(dist, 158);
         assert_eq!(path, vec![0, 1, 2]);
@@ -352,7 +336,7 @@ mod tests {
         let start_idx = 3;
         let end_idx = 0;
         let mut graph =
-            Graph::parse_from_string("4\nA\nB\nC\nD\n\n4\nA B 1\nB D 10\nA C 2\nC D 5\n\nA D")
+            Graph::new_from_string("4\nA\nB\nC\nD\n\n4\nA B 1\nB D 10\nA C 2\nC D 5\n\nA D")
                 .unwrap();
 
         let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
@@ -367,7 +351,7 @@ mod tests {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let start_idx = 7;
         let end_idx = 0;
-        let mut graph = Graph::parse_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon Inverness").unwrap();
+        let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon Inverness").unwrap();
 
         let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
 
@@ -398,14 +382,14 @@ mod tests {
     #[test]
     fn find_self_referential_route_in_file() {
         assert_eq!(
-            Graph::parse_from_string("3\nA\nB\nC\n\n4\nA A 1\nA B 2\nB C 3\nA C 4\n\nA A"),
+            Graph::new_from_string("3\nA\nB\nC\n\n4\nA A 1\nA B 2\nB C 3\nA C 4\n\nA A"),
             Err("Route is self referential. Dist from A to A = 0".to_string())
         );
     }
     #[test]
     fn find_disconnected_route_in_file() {
         let mut graph =
-            Graph::parse_from_string("4\nA\nB\nC\nD\n\n4\nA B 1\nA B 2\nB C 3\nA C 4\n\nA D")
+            Graph::new_from_string("4\nA\nB\nC\nD\n\n4\nA B 1\nA B 2\nB C 3\nA C 4\n\nA D")
                 .unwrap();
         assert_eq!(
             dijkstra(0, 3, &mut graph),
