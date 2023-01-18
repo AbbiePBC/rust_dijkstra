@@ -27,6 +27,7 @@ or using a custom enum instead of Result would convey the different error cases 
 [x] if possible, remove cyclic dependency of parse_input and construct_graph
 //edit: now, main->find_path, construct_graph, parse_input; find_path->construct_graph, parse_input; construct_graph->parse_input.
 [ ] dijkstra_from_file(<path>) would be nice
+[ ] dijkstra fn requires knowledge of the graph idx for start and end
 
 # Bug fix!
 [x] After fixing the bug in which the total dist from the start node was added rather than of an edge

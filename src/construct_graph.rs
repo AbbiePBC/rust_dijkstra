@@ -77,8 +77,6 @@ impl Graph {
 
         let routes: Vec<&str> = routes_to_find.trim().split("\n").collect();
         for route in routes {
-            println!("route to find: {:?}", route);
-
             let route_names: Vec<&str> = route.split(" ").collect();
             let route_result = parse_route_from_string(route_names, &graph.graph_nodes.clone())?;
             graph.routes_to_find.push(route_result);

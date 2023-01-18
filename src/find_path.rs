@@ -10,21 +10,24 @@ fn get_route_travelled(
     original_start_idx: usize,
     end_idx: usize,
     nodes_visited: &Vec<Node>,
-) -> Vec<usize> {
+) -> (Vec<usize>, Vec<usize>) {
     //go backwards through the nodes to find the parent node.
     let mut idx = end_idx;
     let mut nodes_in_order: Vec<usize> = Vec::new();
+    let mut weights_in_order: Vec<usize> = Vec::new();
+
     nodes_in_order.push(end_idx);
     //debug!("the nodes visited are 1 {:?}", nodes_visited);
     while idx != original_start_idx {
         idx = nodes_visited[idx].parent_idx;
         nodes_in_order.push(idx);
+        weights_in_order.push(nodes_visited[idx].dist_to_node);
     }
 
     nodes_in_order.reverse();
     //debug!("Nodes in order: {:?}", &nodes_in_order);
 
-    return nodes_in_order;
+    return (nodes_in_order, weights_in_order);
 }
 
 pub fn get_human_readable_route(
@@ -66,7 +69,7 @@ fn find_closest_node(
     //todo same as the node idx?
     for (key, node) in &*edges_can_traverse {
         if node.dist_to_node + nodes_visited[node.parent_idx].dist_to_node <= min_weight {
-            min_weight = node.dist_to_node; // + nodes_visited[node.parent_idx].dist_to_node
+            min_weight = node.dist_to_node + nodes_visited[node.parent_idx].dist_to_node ; // + nodes_visited[node.parent_idx].dist_to_node
             node_to_remove = *node;
             key_to_remove = *key;
             //debug!("the key {} might be removed, which is node {:?}", key_to_remove, edges_can_traverse[&key_to_remove]);
@@ -80,7 +83,7 @@ fn find_closest_node(
     return node_to_remove;
 }
 
-fn update_existing_edges_to_node(nodes_visited: &mut Vec<Node>, closest_node: Node) {
+fn update_existing_edges_to_node(nodes_visited: &mut Vec<Node>, closest_node: Node, original_start_idx: usize) {
     //debug!(" updating existing edges to {:?}", closest_node);
     let node_to_add_to_path = nodes_visited[closest_node.index];
     //debug!(" for the edge {:?} from {}", closest_node.dist_to_node, closest_node.parent_idx);
@@ -96,20 +99,22 @@ fn update_existing_edges_to_node(nodes_visited: &mut Vec<Node>, closest_node: No
             debug!(" we have a path to {:?}", closest_node);
             debug!("comparing node.dist_to_node {} > closest_node.dist_to_node {}+ node_to_add_to_path.dist_to_node {}", node.dist_to_node, closest_node.dist_to_node, node_to_add_to_path.dist_to_node);
             if node.dist_to_node > closest_node.dist_to_node + node_to_add_to_path.dist_to_node {
-                debug!(
-                    " we're now updating the path' to {:?}",
-                    closest_node.parent_idx
-                );
+
                 nodes_visited[closest_node.parent_idx] = Node::new(
                     node.index,
                     closest_node.index,
                     closest_node.dist_to_node + node_to_add_to_path.dist_to_node,
                 );
+                let cp_nodes_visited = nodes_visited.clone();
+                debug!(
+                    " we're now updating the path' to {:?}... the new path is {:?}",
+                    closest_node.parent_idx, get_route_travelled(original_start_idx, closest_node.index, &cp_nodes_visited)
+                );
                 // todo the idea was to update the above rather than replace it.
                 // but now think we want to keep the nodes_visited and not overwrite data
                 // either way, revisit this
 
-                update_existing_edges_to_node(nodes_visited, nodes_visited[closest_node.parent_idx])
+                update_existing_edges_to_node(nodes_visited, nodes_visited[closest_node.parent_idx], original_start_idx)
             }
         }
         None => {
@@ -118,7 +123,7 @@ fn update_existing_edges_to_node(nodes_visited: &mut Vec<Node>, closest_node: No
     }
 }
 
-fn index_of_node_to_add(
+fn node_to_add(
     edges_can_traverse: &mut BTreeMap<usize, Node>,
     nodes_visited: &mut Vec<Node>,
     graph: &mut Graph,
@@ -143,16 +148,17 @@ fn add_to_frontier(nodes_can_visit: &mut BTreeMap<usize, Node>, edge_to_add: &Ed
             edge_to_add.weight,
         ),
     );
-    //debug!("nodes can visit: {:?}", nodes_can_visit);
+    debug!("added the edge: {:?}", edge_to_add);
+    debug!("now we can go to the following nodes {:?}", nodes_can_visit);
 }
 
 pub fn dijkstra(
-    mut start_idx: usize,
+    mut original_start_idx: usize,
     end_idx: usize,
     graph: &mut Graph,
 ) -> Result<(usize, Vec<usize>), String> {
-    let original_start_idx = start_idx;
-    let mut parent_idx = start_idx;
+    let mut current_idx = original_start_idx;
+    let mut parent_idx = current_idx;
 
     let number_of_nodes = graph.number_of_nodes;
     //todo: use a binary search tree here to avoid needing to allocate space for the whole vector.
@@ -162,13 +168,16 @@ pub fn dijkstra(
     for _ in 0..number_of_nodes {
         nodes_visited.push(Node::new(INFINITE_DIST, INFINITE_DIST, 0));
     }
-    nodes_visited[start_idx] = Node::new(start_idx, parent_idx, 0);
+    nodes_visited[current_idx] = Node::new(current_idx, parent_idx, 0);
 
     let mut edges_can_traverse: BTreeMap<usize, Node> = BTreeMap::new(); // can make this just contain edges probably
     let mut look_for_node = true;
-    while look_for_node {
-        add_to_frontier_edges_from_node(graph, start_idx, &mut edges_can_traverse);
-
+    let mut still_look_for_node = true;
+    while still_look_for_node {
+        add_to_frontier_edges_from_node(graph, current_idx, &mut edges_can_traverse);
+        if !look_for_node {
+            still_look_for_node = false;
+        }
         if edges_can_traverse.is_empty() {
             if nodes_visited.iter().find(|&x| x.index == end_idx) == None {
                 return Err("Are the start and end disconnected? No path found".to_string());
@@ -178,14 +187,14 @@ pub fn dijkstra(
             }
         } else {
             let closest_node =
-                index_of_node_to_add(&mut edges_can_traverse, &mut nodes_visited, graph);
+                node_to_add(&mut edges_can_traverse, &mut nodes_visited, graph);
             graph.mark_edge_as_traversed(closest_node);
             match nodes_visited
                 .iter()
                 .find(|&x| x.index == closest_node.index)
             {
                 None => {
-                    start_idx = closest_node.index;
+                    current_idx = closest_node.index;
                     nodes_visited[closest_node.index] = Node::new(
                         closest_node.index,
                         closest_node.parent_idx,
@@ -196,7 +205,7 @@ pub fn dijkstra(
                 Some(node) => {
                     if closest_node.dist_to_node != INFINITE_DIST {
                         //debug!("updating existing edges to nde");
-                        update_existing_edges_to_node(&mut nodes_visited, closest_node);
+                        update_existing_edges_to_node(&mut nodes_visited, closest_node, original_start_idx);
                     }
                 }
             }
@@ -210,10 +219,10 @@ pub fn dijkstra(
     }
     debug!(
         "so far, route: {:?}",
-        get_route_travelled(original_start_idx, start_idx, &nodes_visited)
+        get_route_travelled(original_start_idx, current_idx, &nodes_visited)
     );
 
-    let nodes_in_order = get_route_travelled(original_start_idx, end_idx, &nodes_visited);
+    let (nodes_in_order,_) = get_route_travelled(original_start_idx, end_idx, &nodes_visited);
 
     return Ok((nodes_visited[end_idx].dist_to_node, nodes_in_order));
 }
@@ -316,7 +325,7 @@ mod tests {
     }
 
     #[test]
-    fn find_correct_route_in_file() -> Result<(), Box<dyn std::error::Error>> {
+    fn find_correct_route_in_file()  {
         let start_idx = 0;
         let end_idx = 2;
 
@@ -328,7 +337,6 @@ mod tests {
         // let route = get_human_readable_route(path, &graph_nodes).unwrap();
         // assert_eq!(print_route(route), "Cardiff->Bristol->London".to_string());
 
-        Ok(())
     }
     #[test]
     fn find_correct_route_in_file_when_shorter_early_edge_is_wrong_path_simple(
@@ -347,13 +355,43 @@ mod tests {
         Ok(())
     }
     #[test]
-    fn find_correct_route_in_file_when_shorter_early_edge_is_wrong_path(
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    fn simplify_below_test() {
+        let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon York").unwrap();
+
+        //
+        let (dist, path) = dijkstra(7, 3, &mut graph).unwrap();
+        assert_eq!(path, [7,5,3]);
+        assert_eq!(dist, 194 + 82);
+        let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon York").unwrap();
+
+
+        let (dist, path) = dijkstra(7, 5, &mut graph).unwrap();
+        assert_eq!(path, [7,5]);
+        assert_eq!(dist, 194);
+        let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon York").unwrap();
+
+        let (dist, path) = dijkstra(5, 3, &mut graph).unwrap();
+        assert_eq!(path, [5,3]);
+        assert_eq!(dist, 82);
+
+        //
+        // let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
+        // assert_eq!(dist, 194 + 82 + 107);
+        // we do 192, _128_, 107, 158 for some reason, and this causes the problem, between 5 and 3
+    }
+    // the test below is working when start_idx and end_idx are reversed
+    // therefore there is a bug in one (or more) of the following:
+    // - add edges to the graph in both directions
+    // - adding edges to the frontier
+    // - removing the correct edge from the frontier
+    // - different behviour in diff directions re path finding
+    #[test]
+    fn find_correct_route_in_file_when_shorter_early_edge_is_wrong_path() {
         let start_idx = 7;
         let end_idx = 0;
         let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon Inverness").unwrap();
 
-        let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
+        let (dist, path) = dijkstra( start_idx, end_idx, &mut graph).unwrap();
 
         // current behaviour: 111 + 81 + 214 + 167 = 573 (London->Birmingham->Manchester->Glasgow->Inverness)
         // expected behaviour: 194 + 82 + 107 + 158 = 541 (London->York->Newcastle->Edinburgh->Inverness)
@@ -377,7 +415,6 @@ mod tests {
         assert_eq!(dist, 541);
         // assert_eq!(path, vec![0,1,2]);
 
-        Ok(())
     }
     #[test]
     fn find_self_referential_route_in_file() {

@@ -42,7 +42,7 @@ fn main() -> Result<(), String> {
                 // todo: parallelise this &learn how to do threading in rust, for loop is slower
                 let (dist, route) = dijkstra(start_end.0, start_end.1, &mut graph)?;
                 let human_readable_route = get_human_readable_route(route, &graph_nodes)?;
-                println!("{}", print_route(human_readable_route));
+                println!("{}, dist {}", print_route(human_readable_route), dist);
 
                 graph.mark_all_edges_as_not_traversed();
             }
