@@ -1,4 +1,4 @@
-use crate::get_nodes;
+use crate::{get_nodes, read_input};
 use crate::parse_input::get_edge_info;
 pub const INFINITE_DIST: usize = 100000000;
 use crate::find_path::Node;
@@ -12,7 +12,7 @@ pub struct Edge {
     pub is_traversed: bool,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Graph {
     pub number_of_nodes: usize,
     pub edges: Vec<Vec<Edge>>,
@@ -48,6 +48,46 @@ impl Graph {
             }
         }
     }
+    // pub(crate) fn parse_from_string(&mut self, graph_string: &str) -> Result<Graph, String> {
+    //     let (node_data, edge_data, _) = read_input(graph_string.unwrap())?;
+    //     let graph_nodes: Vec<GraphNode> = get_nodes(&node_data)?;
+    //     let mut graph  = construct_graph_from_edges(&graph_nodes, &edge_data)?;
+    //     return Ok(graph);
+    // }
+
+    pub(crate) fn update_edge_in_both_directions(&mut self, new_edge: Edge){
+        let new_edge_is_updated = self.update_existing_edge(new_edge);
+        // same in reverse, assuming bidirectionality of edges
+        if new_edge_is_updated {
+            let new_reverse_edge = Edge::new(new_edge.index_second, new_edge.index_first, new_edge.weight);
+            self.update_existing_edge(new_reverse_edge);
+        }
+    }
+
+    pub(crate) fn update_existing_edge(&mut self, new_edge: Edge) -> bool {
+
+        let start_index = new_edge.index_first;
+        let end_index = new_edge.index_second;
+        let new_weight = new_edge.weight;
+        let edge_index = self.edges[start_index]
+            .iter()
+            .position(|x| x.index_second == end_index);
+        let mut edge_was_updated = true;
+        match edge_index {
+            None => {}
+            Some(idx_into_edge_list) => {
+                let old_edge_weight = self.edges[start_index][idx_into_edge_list].weight;
+                if old_edge_weight >= new_weight {
+                    self.edges[start_index].remove(idx_into_edge_list);
+                } else {
+                    edge_was_updated = false;
+                }
+            }
+        }
+        self.edges[start_index].push(new_edge);
+        return edge_was_updated;
+
+    }
 }
 
 impl Edge {
@@ -70,28 +110,6 @@ impl GraphNode {
     }
 }
 
-fn update_existing_edge(graph: &mut Graph, new_edge: Edge) -> bool {
-    let start_index = new_edge.index_first;
-    let end_index = new_edge.index_second;
-    let new_weight = new_edge.weight;
-    let edge_index = graph.edges[start_index]
-        .iter()
-        .position(|x| x.index_second == end_index);
-    let mut edge_was_updated = true;
-    match edge_index {
-        None => {}
-        Some(idx_into_edge_list) => {
-            let old_edge_weight = graph.edges[start_index][idx_into_edge_list].weight;
-            if old_edge_weight >= new_weight {
-                graph.edges[start_index].remove(idx_into_edge_list);
-            } else {
-                edge_was_updated = false;
-            }
-        }
-    }
-    graph.edges[start_index].push(new_edge);
-    return edge_was_updated;
-}
 
 pub fn construct_graph_from_edges(
     graph_nodes: &Vec<GraphNode>,
@@ -126,13 +144,9 @@ pub fn construct_graph_from_edges(
             continue;
         }
         let new_edge = Edge::new(start_index, end_index, weight);
-        let new_reverse_edge = Edge::new(end_index, start_index, weight);
 
-        let new_edge_is_updated = update_existing_edge(&mut graph, new_edge);
-        // same in reverse, assuming bidirectionality of edges
-        if new_edge_is_updated {
-            update_existing_edge(&mut graph, new_reverse_edge);
-        }
+        graph.update_edge_in_both_directions(new_edge);
+
     }
 
     return Ok(graph);
