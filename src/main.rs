@@ -2,7 +2,7 @@ mod construct_graph;
 mod find_path;
 mod parse_input;
 
-use crate::construct_graph::{Graph};
+use crate::construct_graph::Graph;
 use crate::find_path::{dijkstra, get_human_readable_route, print_route};
 use crate::parse_input::{get_nodes, read_input};
 
@@ -45,10 +45,9 @@ fn main() -> Result<(), String> {
                 println!("{}", print_route(human_readable_route));
 
                 graph.mark_all_edges_as_not_traversed();
-            }}
+            }
+        }
     }
-
-
 
     Ok(())
 }

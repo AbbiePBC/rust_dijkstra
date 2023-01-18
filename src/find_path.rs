@@ -205,7 +205,8 @@ pub fn dijkstra(
                     nodes_visited[closest_node.index] = Node::new(
                         closest_node.index,
                         closest_node.parent_idx,
-                        nodes_visited[closest_node.parent_idx].dist_to_node + closest_node.dist_to_node,
+                        nodes_visited[closest_node.parent_idx].dist_to_node
+                            + closest_node.dist_to_node,
                     );
                 }
                 Some(node) => {
@@ -246,7 +247,6 @@ fn add_to_frontier_edges_from_node(
 
     debug!("edges can traverse {:?}", edges_can_traverse);
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -341,8 +341,8 @@ mod tests {
         assert_eq!(dist, 158);
         assert_eq!(path, vec![0, 1, 2]);
         // todo: remove graph_nodes  as a needed thing here
-       // let route = get_human_readable_route(path, &graph_nodes).unwrap();
-       // assert_eq!(print_route(route), "Cardiff->Bristol->London".to_string());
+        // let route = get_human_readable_route(path, &graph_nodes).unwrap();
+        // assert_eq!(print_route(route), "Cardiff->Bristol->London".to_string());
 
         Ok(())
     }
@@ -351,7 +351,9 @@ mod tests {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let start_idx = 3;
         let end_idx = 0;
-        let mut graph = Graph::parse_from_string("4\nA\nB\nC\nD\n\n4\nA B 1\nB D 10\nA C 2\nC D 5\n\nA D").unwrap();
+        let mut graph =
+            Graph::parse_from_string("4\nA\nB\nC\nD\n\n4\nA B 1\nB D 10\nA C 2\nC D 5\n\nA D")
+                .unwrap();
 
         let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
 
@@ -396,17 +398,15 @@ mod tests {
     #[test]
     fn find_self_referential_route_in_file() {
         assert_eq!(
-           Graph::parse_from_string("3\nA\nB\nC\n\n4\nA A 1\nA B 2\nB C 3\nA C 4\n\nA A"),
-            Err(
-                "Route is self referential. Dist from A to A = 0"
-                    .to_string()
-            )
+            Graph::parse_from_string("3\nA\nB\nC\n\n4\nA A 1\nA B 2\nB C 3\nA C 4\n\nA A"),
+            Err("Route is self referential. Dist from A to A = 0".to_string())
         );
     }
     #[test]
     fn find_disconnected_route_in_file() {
-
-        let mut graph = Graph::parse_from_string("4\nA\nB\nC\nD\n\n4\nA B 1\nA B 2\nB C 3\nA C 4\n\nA D").unwrap();
+        let mut graph =
+            Graph::parse_from_string("4\nA\nB\nC\nD\n\n4\nA B 1\nA B 2\nB C 3\nA C 4\n\nA D")
+                .unwrap();
         assert_eq!(
             dijkstra(0, 3, &mut graph),
             Err("Are the start and end disconnected? No path found".to_string())

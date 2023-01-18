@@ -6,7 +6,6 @@ pub struct GraphNode {
     pub node_name: String,
 }
 
-
 impl GraphNode {
     pub(crate) fn new(idx_: usize, name_: String) -> GraphNode {
         return GraphNode {
@@ -15,7 +14,6 @@ impl GraphNode {
         };
     }
 }
-
 
 pub fn read_input(contents: String) -> Result<(String, String, String), String> {
     let data: Vec<&str> = contents.split("\n\n").collect();
@@ -29,19 +27,16 @@ pub fn read_input(contents: String) -> Result<(String, String, String), String> 
     return Ok((node_data, edge_data, routes_to_find));
 }
 
-
 pub fn get_node_index_from_node_name(
     node_name: &str,
     graph_nodes: &Vec<GraphNode>,
 ) -> Result<usize, String> {
     let graph_node = graph_nodes.iter().find(|&x| x.node_name == node_name);
     match graph_node {
-        None => {
-            return Err(format!(
-                "Nodes in edges should be present in node list. Node {} (possibly others) not found.",
-                node_name
-            ))
-        }
+        None => return Err(format!(
+            "Nodes in edges should be present in node list. Node {} (possibly others) not found.",
+            node_name
+        )),
         Some(node) => return Ok(node.index),
     }
 }
@@ -69,7 +64,6 @@ pub fn get_nodes(node_data: &str) -> Result<Vec<GraphNode>, String> {
 
 // todo rename the 'get' functions
 pub fn get_edges(edge_data: &str) -> Result<Vec<&str>, String> {
-
     let edges: Vec<&str> = edge_data.split("\n").collect();
     let num_edges: usize = edges[0]
         .parse::<usize>()
