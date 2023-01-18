@@ -1,5 +1,21 @@
-use crate::construct_graph::{get_node_index_from_node_name, GraphNode};
 use log::debug;
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct GraphNode {
+    pub index: usize,
+    pub node_name: String,
+}
+
+
+impl GraphNode {
+    pub(crate) fn new(idx_: usize, name_: String) -> GraphNode {
+        return GraphNode {
+            index: idx_,
+            node_name: name_,
+        };
+    }
+}
+
 
 pub fn read_input(contents: String) -> Result<(String, String, String), String> {
     let data: Vec<&str> = contents.split("\n\n").collect();
@@ -11,6 +27,23 @@ pub fn read_input(contents: String) -> Result<(String, String, String), String> 
     let routes_to_find = data[2].to_string();
 
     return Ok((node_data, edge_data, routes_to_find));
+}
+
+
+pub fn get_node_index_from_node_name(
+    node_name: &str,
+    graph_nodes: &Vec<GraphNode>,
+) -> Result<usize, String> {
+    let graph_node = graph_nodes.iter().find(|&x| x.node_name == node_name);
+    match graph_node {
+        None => {
+            return Err(format!(
+                "Nodes in edges should be present in node list. Node {} (possibly others) not found.",
+                node_name
+            ))
+        }
+        Some(node) => return Ok(node.index),
+    }
 }
 
 pub fn get_nodes(node_data: &str) -> Result<Vec<GraphNode>, String> {
@@ -34,6 +67,24 @@ pub fn get_nodes(node_data: &str) -> Result<Vec<GraphNode>, String> {
     return Ok(graph_nodes);
 }
 
+// todo rename the 'get' functions
+pub fn get_edges(edge_data: &str) -> Result<Vec<&str>, String> {
+
+    let edges: Vec<&str> = edge_data.split("\n").collect();
+    let num_edges: usize = edges[0]
+        .parse::<usize>()
+        .expect("Expect an integer number of edges.");
+
+    if num_edges != edges.len() - 1 {
+        return Err(format!(
+            "Unexpected number of edges. Expected: {}, actual: {}",
+            num_edges,
+            edges.len() - 1,
+        ));
+    }
+    return Ok(edges);
+}
+
 pub fn get_edge_info(
     edge: &str,
     graph_nodes: &Vec<GraphNode>,
@@ -41,7 +92,7 @@ pub fn get_edge_info(
     let edge_info: Vec<&str> = edge.split(" ").collect();
     if edge_info.len() != 3 {
         return Err(format!(
-            "Route {:?} is invalid. Please check the input.",
+            "Edge {:?} is invalid. Please check the input.",
             edge_info
         ));
     }

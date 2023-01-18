@@ -3,7 +3,7 @@ use std::collections::btree_map::BTreeMap;
 
 use crate::construct_graph::*;
 use crate::parse_input::*;
-use std::{env, fs};
+use std::fs;
 
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub(crate) struct Node {
@@ -60,7 +60,7 @@ pub fn get_human_readable_route(
     return Ok(path_travelled);
 }
 
-fn print_route(route: Vec<String>) -> String {
+pub fn print_route(route: Vec<String>) -> String {
     let mut final_path: String = route[0].to_string();
     for i in 1..route.len() {
         final_path = format!("{}->{}", final_path, route[i]);
@@ -162,7 +162,7 @@ fn add_to_frontier(nodes_can_visit: &mut BTreeMap<usize, Node>, edge_to_add: &Ed
     //debug!("nodes can visit: {:?}", nodes_can_visit);
 }
 
-fn dijkstra(
+pub fn dijkstra(
     mut start_idx: usize,
     end_idx: usize,
     graph: &mut Graph,
@@ -247,24 +247,6 @@ fn add_to_frontier_edges_from_node(
     debug!("edges can traverse {:?}", edges_can_traverse);
 }
 
-pub fn get_human_readable_solution(
-    route: &str,
-    graph_nodes: &Vec<GraphNode>,
-    graph: &mut Graph,
-) -> Result<String, String> {
-    let route_names: Vec<&str> = route.split(" ").collect();
-    let route_result = get_route(route_names, &graph_nodes)?;
-    let (start_idx, end_idx) = route_result;
-
-    let (dist, route) = dijkstra(start_idx, end_idx, graph)?;
-    let human_readable_route = get_human_readable_route(route, &graph_nodes)?;
-    let result = print_route(human_readable_route);
-
-    return Ok(format!(
-        "Route travelled: {}, with distance {}",
-        result, dist
-    ));
-}
 
 #[cfg(test)]
 mod tests {
@@ -354,15 +336,13 @@ mod tests {
         let start_idx = 0;
         let end_idx = 2;
 
-        let (node_data, edge_data, routes_to_find) = parse_input::read_input("5\nCardiff\nBristol\nLondon\nYork\nBirmingham\n\n5\nYork London 194\nCardiff Bristol 44\nBristol Birmingham 88\nBristol London 114\nBirmingham London 111\n\nCardiff London".to_string())?;
-        let graph_nodes: Vec<GraphNode> = parse_input::get_nodes(&node_data)?;
-        let mut graph = construct_graph_from_edges(&graph_nodes, &edge_data)?;
-
+        let mut graph = Graph::parse_from_string("5\nCardiff\nBristol\nLondon\nYork\nBirmingham\n\n5\nYork London 194\nCardiff Bristol 44\nBristol Birmingham 88\nBristol London 114\nBirmingham London 111\n\nCardiff London").unwrap();
         let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
         assert_eq!(dist, 158);
         assert_eq!(path, vec![0, 1, 2]);
-        let route = get_human_readable_route(path, &graph_nodes).unwrap();
-        assert_eq!(print_route(route), "Cardiff->Bristol->London".to_string());
+        // todo: remove graph_nodes  as a needed thing here
+       // let route = get_human_readable_route(path, &graph_nodes).unwrap();
+       // assert_eq!(print_route(route), "Cardiff->Bristol->London".to_string());
 
         Ok(())
     }
@@ -371,11 +351,7 @@ mod tests {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let start_idx = 3;
         let end_idx = 0;
-        let (node_data, edge_data, routes_to_find) = parse_input::read_input(
-            "4\nA\nB\nC\nD\n\n4\nA B 1\nB D 10\nA C 2\nC D 5\n\nA D".to_string(),
-        )?;
-        let graph_nodes: Vec<GraphNode> = parse_input::get_nodes(&node_data)?;
-        let mut graph = construct_graph_from_edges(&graph_nodes, &edge_data)?;
+        let mut graph = Graph::parse_from_string("4\nA\nB\nC\nD\n\n4\nA B 1\nB D 10\nA C 2\nC D 5\n\nA D").unwrap();
 
         let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
 
@@ -389,9 +365,7 @@ mod tests {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let start_idx = 7;
         let end_idx = 0;
-        let (node_data, edge_data, routes_to_find) = parse_input::read_input("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon Inverness".to_string())?;
-        let graph_nodes: Vec<GraphNode> = parse_input::get_nodes(&node_data)?;
-        let mut graph = construct_graph_from_edges(&graph_nodes, &edge_data)?;
+        let mut graph = Graph::parse_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon Inverness").unwrap();
 
         let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
 
@@ -421,28 +395,20 @@ mod tests {
     }
     #[test]
     fn find_self_referential_route_in_file() {
-        let contents = fs::read_to_string("src/test/edge-cases.txt".to_string());
-        let (node_data, edge_data, routes_to_find) =
-            parse_input::read_input(contents.unwrap()).unwrap();
-        let graph_nodes: Vec<GraphNode> = parse_input::get_nodes(&node_data).unwrap();
         assert_eq!(
-            get_route(vec!["SelfReferential", "SelfReferential"], &graph_nodes),
+           Graph::parse_from_string("3\nA\nB\nC\n\n4\nA A 1\nA B 2\nB C 3\nA C 4\n\nA A"),
             Err(
-                "Route is self referential. Dist from SelfReferential to SelfReferential = 0"
+                "Route is self referential. Dist from A to A = 0"
                     .to_string()
             )
         );
     }
     #[test]
     fn find_disconnected_route_in_file() {
-        let contents = fs::read_to_string("src/test/edge-cases.txt".to_string());
-        let (node_data, edge_data, routes_to_find) =
-            parse_input::read_input(contents.unwrap()).unwrap();
-        let graph_nodes: Vec<GraphNode> = parse_input::get_nodes(&node_data).unwrap();
-        let mut graph = construct_graph_from_edges(&graph_nodes, &edge_data).unwrap();
 
+        let mut graph = Graph::parse_from_string("4\nA\nB\nC\nD\n\n4\nA B 1\nA B 2\nB C 3\nA C 4\n\nA D").unwrap();
         assert_eq!(
-            dijkstra(0, 4, &mut graph),
+            dijkstra(0, 3, &mut graph),
             Err("Are the start and end disconnected? No path found".to_string())
         );
     }

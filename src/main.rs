@@ -2,9 +2,10 @@ mod construct_graph;
 mod find_path;
 mod parse_input;
 
-use crate::construct_graph::{construct_graph_from_edges, GraphNode};
-use crate::find_path::get_human_readable_solution;
+use crate::construct_graph::{Graph};
+use crate::find_path::{dijkstra, get_human_readable_route, print_route};
 use crate::parse_input::{get_nodes, read_input};
+
 use log::debug;
 use std::{env, fs};
 
@@ -31,24 +32,23 @@ fn main() -> Result<(), String> {
                 filename
             )
         }
-        Ok(_) => {}
-    }
-    let (node_data, edge_data, routes_to_find) = read_input(contents.unwrap())?;
-    let graph_nodes: Vec<GraphNode> = get_nodes(&node_data)?;
-    let mut graph = construct_graph_from_edges(&graph_nodes, &edge_data)?;
+        Ok(file_path) => {
+            let mut graph = Graph::parse_from_string(&file_path)?;
 
-    debug!("graph: {:?}", graph);
+            debug!("graph: {:?}", graph);
+            let graph_nodes = graph.graph_nodes.clone();
+            let routes = graph.routes_to_find.clone();
+            for start_end in routes {
+                // todo: parallelise this &learn how to do threading in rust, for loop is slower
+                let (dist, route) = dijkstra(start_end.0, start_end.1, &mut graph)?;
+                let human_readable_route = get_human_readable_route(route, &graph_nodes)?;
+                println!("{}", print_route(human_readable_route));
 
-    let routes: Vec<&str> = routes_to_find.trim().split("\n").collect();
-    for route in routes {
-        // todo: parallelise this &learn how to do threading in rust, for loop is slower
-        let result = get_human_readable_solution(route, &graph_nodes, &mut graph);
-        match result {
-            Err(err) => println!("An error occurred on the path {}. Error: {}", route, err),
-            Ok(_) => println!("{}", result.unwrap()),
-        }
-        graph.mark_all_edges_as_not_traversed();
+                graph.mark_all_edges_as_not_traversed();
+            }}
     }
+
+
 
     Ok(())
 }
