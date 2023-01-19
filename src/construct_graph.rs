@@ -88,9 +88,11 @@ impl Graph {
             //debug!("e  - {:?}",e);
             if e.index_second == node.index && e.index_first == node.parent_idx {
                 e.is_traversed = true;
-                //debug!("marked edge as traversed  - {:?}",e);
+                println!("marked edge as traversed  - {:?}",e);
+                break;
             }
         }
+
     }
     pub(crate) fn mark_all_edges_as_not_traversed(&mut self) {
         for node_idx in self.edges.iter_mut() {
