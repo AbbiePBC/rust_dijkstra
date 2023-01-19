@@ -187,7 +187,7 @@ mod graph_only_tests {
     #[test]
     fn test_route_finding_with_incorrect_number_of_nodes() {
         let graph = Graph::new_from_string(
-            "4\nI\nG\n\n4\nI G 167\nI E 158\nG E 45\nI G 17\nE I 1\n\nI E",
+            "4\nI\nG\nE\nN\n\n4\nI G 167\nI E 158\nG E 45\nI G 17\nE I 1\n\nI E",
         );
 
         assert_eq!(
