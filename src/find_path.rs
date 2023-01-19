@@ -433,4 +433,25 @@ mod tests {
             Err("Are the start and end disconnected? No path found".to_string())
         );
     }
+    #[test]
+    fn test_updating_path_simple(){
+
+        //
+        // if node.dist_to_node > closest_node.dist_to_node + node_to_add_to_path.dist_to_node {
+        //     nodes_visited[closest_node.parent_idx] = Node::new(1000, 1000, 1000);
+        let original_start_idx = 0;
+        let mut nodes_visited = vec![Node::new(0, 0, 0), Node::new(1, 0, 100), Node::new(2,0, 300)];
+        let closest_node = Node::new(2,1, 20);
+        update_existing_edges_to_node(&mut nodes_visited, closest_node, original_start_idx);
+        assert_eq!(nodes_visited, vec![Node::new(0, 0, 0), Node::new(1, 0, 100), Node::new(2,1, 120)]);
+    }
+    #[test]
+    fn test_updating_path_repeatedly(){
+
+        let original_start_idx = 0;
+        let mut nodes_visited = vec![Node::new(0, 0, 0), Node::new(1, 0, 300), Node::new(2,1, 400), Node::new(3,2, 500)];
+        let closest_node = Node::new(1,0, 20);
+        update_existing_edges_to_node(&mut nodes_visited, closest_node, original_start_idx);
+        assert_eq!(nodes_visited, vec![Node::new(0, 0, 0), Node::new(1, 0, 20), Node::new(2,1, 120), Node::new(3,2, 220)]);
+    }
 }
