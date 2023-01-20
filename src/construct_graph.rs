@@ -76,10 +76,10 @@ impl Graph {
         return Ok(graph);
     }
     // todo now we're doing this twice?
-    pub(crate) fn mark_edge_as_traversed(&mut self, node: Node) {
-        for e in self.edges[node.parent_idx].iter_mut() {
+    pub(crate) fn mark_edge_as_traversed(&mut self, edge: Edge) {
+        for e in self.edges[edge.index_first].iter_mut() {
             //debug!("e  - {:?}",e);
-            if e.index_second == node.index && e.index_first == node.parent_idx {
+            if e.index_second == edge.index_second && e.index_first == edge.index_first {
                 e.is_traversed = true;
                 println!("marked edge as traversed  - {:?}", e);
                 break;

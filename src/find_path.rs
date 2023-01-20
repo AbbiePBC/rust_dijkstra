@@ -72,26 +72,26 @@ fn find_shortest_untraversed_path(edges_can_traverse: &mut Vec<Edge>) -> Edge {
 
 fn update_existing_edges_from_node(
     nodes_visited: &mut Vec<Node>,
-    closest_node: Node,
+    closest_edge: Edge,
     original_start_idx: usize,
 ) -> usize {
-    let node_in_current_path = nodes_visited[closest_node.index];
+    let node_in_current_path = nodes_visited[closest_edge.index_second];
 
     let node_visited_already = nodes_visited
         .into_iter()
-        .find(|x| x.index == closest_node.parent_idx);
+        .find(|x| x.index == closest_edge.index_first);
 
     match node_visited_already {
         Some(node) => {
-            debug!(" we have a path to {:?}", closest_node);
-            debug!("comparing node.dist_to_node {} > closest_node.dist_to_node {}+ node_to_add_to_path.dist_to_node {}", node.dist_to_node, closest_node.dist_to_node, node_in_current_path.dist_to_node);
-            if node_in_current_path.dist_to_node > node.dist_to_node + closest_node.dist_to_node {
+            debug!(" we have a path to {:?}", closest_edge.index_second);
+            debug!("comparing node.dist_to_node {} > closest_node.dist_to_node {}+ node_to_add_to_path.dist_to_node {}", node.dist_to_node, closest_edge.weight, node_in_current_path.dist_to_node);
+            if node_in_current_path.dist_to_node > node.dist_to_node + closest_edge.weight {
                 let decrease_in_dist = node_in_current_path.dist_to_node
-                    - (node.dist_to_node + closest_node.dist_to_node);
-                nodes_visited[closest_node.index] = Node::new(
-                    closest_node.index,
+                    - (node.dist_to_node + closest_edge.weight);
+                nodes_visited[closest_edge.index_second] = Node::new(
+                    closest_edge.index_second,
                     node.index,
-                    closest_node.dist_to_node + node.dist_to_node,
+                    closest_edge.weight + node.dist_to_node,
                 );
                 let cp_nodes_visited = nodes_visited.clone();
                 // todo the idea was to update the above rather than replace it.
@@ -135,17 +135,15 @@ fn update_existing_edges_to_node(
 
 fn node_to_add(
     edges_can_traverse: &mut Vec<Edge>,
-    nodes_visited: &mut Vec<Node>,
     graph: &mut Graph,
-) -> Node {
+) -> Edge {
     // todo make this naming less confusing; we add node to node_visited, but remove it from nodes_can_visit
 
     //debug!("possible nodes to add are: {:?}", edges_can_traverse);
     let edge = find_shortest_untraversed_path(edges_can_traverse);
-    let closest_node = Node::new(edge.index_second, edge.index_first, edge.weight);
-    graph.mark_edge_as_traversed(closest_node);
+    graph.mark_edge_as_traversed(edge);
 
-    return closest_node;
+    return edge;
 }
 
 pub fn dijkstra(
@@ -180,32 +178,32 @@ pub fn dijkstra(
                 look_for_node = false;
             }
         } else {
-            let closest_node = node_to_add(&mut edges_can_traverse, &mut nodes_visited, graph);
+            let closest_edge = node_to_add(&mut edges_can_traverse, graph);
 
             match nodes_visited
                 .iter()
-                .find(|&x| x.index == closest_node.index)
+                .find(|&x| x.index == closest_edge.index_second)
             {
                 None => {
-                    current_idx = closest_node.index;
-                    nodes_visited[closest_node.index] = Node::new(
-                        closest_node.index,
-                        closest_node.parent_idx,
-                        nodes_visited[closest_node.parent_idx].dist_to_node
-                            + closest_node.dist_to_node,
+                    current_idx = closest_edge.index_second;
+                    nodes_visited[closest_edge.index_second] = Node::new(
+                        closest_edge.index_second,
+                        closest_edge.index_first,
+                        nodes_visited[closest_edge.index_first].dist_to_node
+                            + closest_edge.weight,
                     );
                 }
                 Some(node) => {
-                    if closest_node.dist_to_node != INFINITE_DIST {
+                    if closest_edge.weight != INFINITE_DIST {
                         let dist_dec = update_existing_edges_from_node(
                             &mut nodes_visited,
-                            closest_node,
+                            closest_edge,
                             original_start_idx,
                         );
                         if dist_dec != 0 {
                             update_existing_edges_to_node(
                                 &mut nodes_visited,
-                                closest_node,
+                                Node::new(closest_edge.index_second, closest_edge.index_first, closest_edge.weight),
                                 dist_dec,
                             );
                         }
@@ -439,8 +437,8 @@ mod tests {
             Node::new(1, 0, 100),
             Node::new(2, 0, 300),
         ];
-        let closest_node = Node::new(2, 1, 20);
-        update_existing_edges_from_node(&mut nodes_visited, closest_node, original_start_idx);
+        let closest_edge = Edge::new(1, 2, 20);
+        update_existing_edges_from_node(&mut nodes_visited, closest_edge, original_start_idx);
         assert_eq!(
             nodes_visited,
             vec![
@@ -459,9 +457,9 @@ mod tests {
             Node::new(2, 1, 400),
             Node::new(3, 2, 500),
         ];
-        let closest_node = Node::new(1, 0, 20);
-        update_existing_edges_from_node(&mut nodes_visited, closest_node, original_start_idx);
-        update_existing_edges_to_node(&mut nodes_visited, closest_node, 280);
+        let closest_edge = Edge::new(0, 1, 20);
+        update_existing_edges_from_node(&mut nodes_visited, closest_edge, original_start_idx);
+        update_existing_edges_to_node(&mut nodes_visited, Node::new(1, 0, 20), 280);
 
         assert_eq!(
             nodes_visited,
@@ -485,9 +483,9 @@ mod tests {
             Node::new(2, 0, 300),
             Node::new(3, 2, 400),
         ];
-        let closest_node = Node::new(2, 1, 20);
-        update_existing_edges_from_node(&mut nodes_visited, closest_node, original_start_idx);
-        update_existing_edges_to_node(&mut nodes_visited, closest_node, 300 - (100 + 20));
+        let closest_edge = Edge::new(1, 2, 20);
+        update_existing_edges_from_node(&mut nodes_visited, closest_edge, original_start_idx);
+        update_existing_edges_to_node(&mut nodes_visited, Node::new(2, 1, 20), 300 - (100 + 20));
         assert_eq!(
             nodes_visited,
             vec![
@@ -512,9 +510,9 @@ mod tests {
             Node::new(1, 2, 111),
             Node::new(2, 2, 0),
         ];
-        let closest_node = Node::new(0, 2, 194);
-        let dec = update_existing_edges_from_node(&mut nodes_visited, closest_node, 2);
-        update_existing_edges_to_node(&mut nodes_visited, closest_node, dec);
+        let closest_edge = Edge::new(2, 0, 194);
+        let dec = update_existing_edges_from_node(&mut nodes_visited, closest_edge, 2);
+        update_existing_edges_to_node(&mut nodes_visited, Node::new(0, 2, 194), dec);
         assert_eq!(
             nodes_visited,
             vec![
