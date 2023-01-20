@@ -241,6 +241,7 @@ fn add_to_frontier_edges_from_node(
 
 #[cfg(test)]
 mod tests {
+    use log::info;
     use super::*;
     use crate::parse_input;
 
@@ -408,8 +409,12 @@ mod tests {
     }
     #[test]
     fn find_self_referential_route_in_file() {
+        let info_string = "3\nA\nB\nC\n\n4\nA A 1\nA B 2\nB C 3\nA C 4\n\nA A";
+        let graph = Graph::new_from_string(info_string).unwrap();
+        let nodes_edges_routes : Vec<&str> = info_string.split("\n\n").collect();
+        let route = parse_routes_from_string(nodes_edges_routes[2], &graph.graph_nodes);
         assert_eq!(
-            Graph::new_from_string("3\nA\nB\nC\n\n4\nA A 1\nA B 2\nB C 3\nA C 4\n\nA A"),
+            route,
             Err("Route is self referential. Dist from A to A = 0".to_string())
         );
     }

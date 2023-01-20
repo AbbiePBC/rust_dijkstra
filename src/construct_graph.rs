@@ -1,5 +1,5 @@
 use crate::parse_input::{
-    parse_edges_from_string, parse_graph_nodes_from_string, parse_route_from_string,
+    parse_edges_from_string, parse_graph_nodes_from_string, parse_routes_from_string,
     split_contents_into_nodes_edges_routes, GraphNode,
 };
 pub const INFINITE_DIST: usize = 100000000;
@@ -73,12 +73,6 @@ impl Graph {
         let edges = parse_edges_from_string(&edge_data, &graph_nodes)?;
         let mut graph = Graph::new(graph_nodes, edges);
 
-        let routes: Vec<&str> = routes_to_find.trim().split("\n").collect();
-        for route in routes {
-            let route_names: Vec<&str> = route.split(" ").collect();
-            let route_result = parse_route_from_string(route_names, &graph.graph_nodes.clone())?;
-            graph.routes_to_find.push(route_result);
-        }
         return Ok(graph);
     }
     // todo now we're doing this twice?

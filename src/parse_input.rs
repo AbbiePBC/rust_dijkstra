@@ -112,29 +112,36 @@ pub fn parse_edges_from_string(
     return Ok(useful_edges);
 }
 
-pub fn parse_route_from_string(
-    first_route: Vec<&str>,
+pub fn parse_routes_from_string(
+    routes_to_find: &str,
     graph_nodes: &Vec<GraphNode>,
-) -> Result<(usize, usize), String> {
-    if first_route.len() != 2 {
-        return Err(format!(
-            "Route {:?} is invalid. Please check the input.",
-            first_route
-        ));
-    }
-    let start_str = first_route[0];
-    let end_str = first_route[1];
-    if start_str == end_str {
-        return Err(format!(
-            "Route is self referential. Dist from {} to {} = 0",
-            start_str, end_str
-        ));
+) -> Result<Vec<(usize, usize)>, String> {
+
+    let routes: Vec<&str> = routes_to_find.trim().split("\n").collect();
+    let mut parsed_routes = Vec::with_capacity(4);
+    for route in routes {
+        let route_names: Vec<&str> = route.split(" ").collect();
+        if route_names.len() != 2 {
+            return Err(format!(
+                "Route {:?} is invalid. Please check the input.",
+                route_names
+            ));
+        }
+        let start_str = route_names[0];
+        let end_str = route_names[1];
+        if start_str == end_str {
+            return Err(format!(
+                "Route is self referential. Dist from {} to {} = 0",
+                start_str, end_str
+            ));
+        }
+
+        let start_idx = get_node_index_from_node_name(start_str, graph_nodes)?;
+        let end_idx = get_node_index_from_node_name(end_str, graph_nodes)?;
+        parsed_routes.push((start_idx, end_idx));
     }
 
-    let start_idx = get_node_index_from_node_name(start_str, graph_nodes)?;
-    let end_idx = get_node_index_from_node_name(end_str, graph_nodes)?;
-
-    return Ok((start_idx, end_idx));
+    return Ok(parsed_routes);
 }
 
 #[cfg(test)]
@@ -175,7 +182,7 @@ mod input_tests {
         ];
 
         let (start_idx, end_idx) =
-            parse_route_from_string(vec!["Glasgow", "Edinburgh"], &graph_nodes).expect("");
+            parse_routes_from_string("Glasgow Edinburgh", &graph_nodes).expect("")[0];
         assert_eq!(start_idx, 1);
         assert_eq!(end_idx, 2);
     }
