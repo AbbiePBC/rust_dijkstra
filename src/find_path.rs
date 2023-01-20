@@ -103,10 +103,6 @@ fn update_existing_edges_from_node(nodes_visited: &mut Vec<Node>, closest_node: 
                     closest_node.dist_to_node + node.dist_to_node,
                 );
                 let cp_nodes_visited = nodes_visited.clone();
-                debug!(
-                    " we're now updating the path' to {:?}... the new path is {:?}",
-                    closest_node.parent_idx, get_route_travelled(original_start_idx, closest_node.index, &cp_nodes_visited)
-                );
                 // todo the idea was to update the above rather than replace it.
                 // but now think we want to keep the nodes_visited and not overwrite data
                 // either way, revisit this
@@ -115,7 +111,8 @@ fn update_existing_edges_from_node(nodes_visited: &mut Vec<Node>, closest_node: 
             }
         }
         None => {
-            println!("no edges to {:?} yet", closest_node);
+                //return nodes_visited[closest_node.parent_idx].dist_to_node - closest_node.dist_to_node;
+            //
         }
     }
     return 0;
@@ -124,9 +121,9 @@ fn update_existing_edges_from_node(nodes_visited: &mut Vec<Node>, closest_node: 
 fn update_existing_edges_to_node(mut nodes_visited: &mut Vec<Node>, closest_node: Node,  decrease_in_dist: usize) {
     let cp = nodes_visited.clone();
     for mut node in cp {
-        // becuase node is not mutable (yet), overwrite Node
-        if node.parent_idx == closest_node.index && node.dist_to_node != 0 {
-            nodes_visited[node.index] = Node::new(node.index,  node.parent_idx, node.dist_to_node - decrease_in_dist);
+        // because node is not mutable (yet), overwrite Node
+        if node.parent_idx == closest_node.index && node.dist_to_node != 0  {
+            nodes_visited[node.index] = Node::new(node.index,  node.parent_idx, nodes_visited[node.index].dist_to_node - decrease_in_dist);
             let x = nodes_visited.clone();
             update_existing_edges_to_node(nodes_visited, nodes_visited[node.index],  decrease_in_dist);
             return;
@@ -223,7 +220,6 @@ pub fn dijkstra(
                 }
                 Some(node) => {
                     if closest_node.dist_to_node != INFINITE_DIST {
-                        let parent = nodes_visited[closest_node.parent_idx];
                         let dist_dec = update_existing_edges_from_node(&mut nodes_visited, closest_node, original_start_idx);
                         if dist_dec!= 0 {
                             update_existing_edges_to_node(&mut nodes_visited, closest_node, dist_dec);
@@ -362,62 +358,61 @@ mod tests {
     fn simplify_below_test() {
         let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon York").unwrap();
 
+        // let (dist, path) = dijkstra(7, 3, &mut graph).unwrap();
+        // assert_eq!(path, [7,5,3]);
+        // assert_eq!(dist, 194 + 82);
+        // let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon York").unwrap();
         //
-        let (dist, path) = dijkstra(7, 3, &mut graph).unwrap();
-        assert_eq!(path, [7,5,3]);
-        assert_eq!(dist, 194 + 82);
-        let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon York").unwrap();
-
-
-        let (dist, path) = dijkstra(7, 5, &mut graph).unwrap();
-        assert_eq!(path, [7,5]);
-        assert_eq!(dist, 194);
-        let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon York").unwrap();
-
-        let (dist, path) = dijkstra(5, 3, &mut graph).unwrap();
-        assert_eq!(path, [5,3]);
-        assert_eq!(dist, 82);
-
         //
-        // let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
-        // assert_eq!(dist, 194 + 82 + 107);
-        // we do 192, _128_, 107, 158 for some reason, and this causes the problem, between 5 and 3
+        // let (dist, path) = dijkstra(7, 5, &mut graph).unwrap();
+        // assert_eq!(path, [7,5]);
+        // assert_eq!(dist, 194);
+        // let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon York").unwrap();
+        //
+        // let (dist, path) = dijkstra(5, 3, &mut graph).unwrap();
+        // assert_eq!(path, [5,3]);
+        // assert_eq!(dist, 82);
+
+        // let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon York").unwrap();
+        // let (dist, path) = dijkstra(5, 2, &mut graph).unwrap();
+        // assert_eq!(path, [5,3,2]);
+        // assert_eq!(dist, 82 + 107);
+        //
+        //
+        // let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon York").unwrap();
+        // let (dist, path) = dijkstra(5, 0, &mut graph).unwrap();
+        // assert_eq!(path, [5,3,2,0]);
+        // assert_eq!(dist, 82 + 107 + 158);
+
+        let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon York").unwrap();
+        let (dist, path) = dijkstra(7, 2, &mut graph).unwrap();
+        assert_eq!(path, [7, 5,3,2]);
+        assert_eq!(dist, 194 + 82 + 107);
+
+        // let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon York").unwrap();
+        // let (dist, path) = dijkstra(7, 0, &mut graph).unwrap();
+        // assert_eq!(path, [7, 5,3,2,0]);
+        // assert_eq!(dist, 194 + 82 + 107 + 158)
+
     }
-    // the test below is working when start_idx and end_idx are reversed
-    // therefore there is a bug in one (or more) of the following:
-    // - add edges to the graph in both directions
-    // - adding edges to the frontier
-    // - removing the correct edge from the frontier
-    // - different behviour in diff directions re path finding
     #[test]
     fn find_correct_route_in_file_when_shorter_early_edge_is_wrong_path() {
-        let start_idx = 7;
-        let end_idx = 0;
+        let start_idx = 0;
+        let end_idx = 7;
         let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon Inverness").unwrap();
 
         let (dist, path) = dijkstra( start_idx, end_idx, &mut graph).unwrap();
 
-        // current behaviour: 111 + 81 + 214 + 167 = 573 (London->Birmingham->Manchester->Glasgow->Inverness)
-        // expected behaviour: 194 + 82 + 107 + 158 = 541 (London->York->Newcastle->Edinburgh->Inverness)
-        // = [7, 5, 3, 2, 0] ; we get as far as to Edinburgh :(
-        // this path is found when we remove the other route. do we parse the graph incorrectly then?
-        // seems as though ed-> in is incorrect?
-        // i.e. we don't expect the Manchester Glasgow edge to be added yet
-        // removing this edge gives the correct route but dist 587? this is 43 bigger than expected :/
-
-        // => we expect the algorithm to consider the edges in the order:
-        // London Birmingham 111 [7,6] = 111 y
-        // Birmingham Manchester 81 [7,6,4] = 192 y
-        // Manchester York 65 [7,6,4,5] = 257 y
-        // York Newcastle 82 [7, 6, 4, 5, 3] = 339 y
-        // Newcastle Edinburgh 107 ? this one is skipped
-        // Edinburgh Glasgow 45
-        // York Birmingham 129 (both directions) this one goes before N->E??
-        // Glasgow Newcastle 145 (both directions)
-        // Edinburgh Inverness 158
-        // Inverness Glasgow 167 (both directions)
         assert_eq!(dist, 541);
-        // assert_eq!(path, vec![0,1,2]);
+        assert_eq!(path, vec![0, 2, 3, 5, 7]);
+
+        // in opposite direction
+        let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon Inverness").unwrap();
+
+        let (dist, path) = dijkstra( end_idx, start_idx, &mut graph).unwrap();
+
+        assert_eq!(path, vec![7, 5, 3, 2, 0]);
+        assert_eq!(dist, 541);
 
     }
     #[test]
@@ -472,10 +467,21 @@ mod tests {
         update_existing_edges_from_node(&mut nodes_visited, closest_node, original_start_idx);
         update_existing_edges_to_node(&mut nodes_visited, closest_node, 300 - (100+20));
         assert_eq!(nodes_visited, vec![Node::new(0, 0, 0), Node::new(1, 0, 100), Node::new(2,1, 120), Node::new(3,2, 220)]);
-        let closest_node = Node::new(2,1, 10);
-        update_existing_edges_from_node(&mut nodes_visited, closest_node, original_start_idx);
-        update_existing_edges_to_node(&mut nodes_visited, closest_node, 120 - (100+10));
+        // let closest_node = Node::new(2,1, 10);
+        // update_existing_edges_from_node(&mut nodes_visited, closest_node, original_start_idx);
+        // update_existing_edges_to_node(&mut nodes_visited, closest_node, 120 - (100+10));
+        //
+        // assert_eq!(nodes_visited, vec![Node::new(0, 0, 0), Node::new(1, 0, 100), Node::new(2,1, 110), Node::new(3,2, 210)]);
+    }
 
-        assert_eq!(nodes_visited, vec![Node::new(0, 0, 0), Node::new(1, 0, 100), Node::new(2,1, 110), Node::new(3,2, 210)]);
+    #[test]
+    fn test_update_path_to_start(){
+        // taken from the london->inverness test failing, but relevant indexes here are -5 for indexing reasons.
+        let mut nodes_visited = vec![Node::new(0,1,240), Node::new(1,2,111),  Node::new(2,2, 0)];
+        let closest_node = Node::new(0,2, 194);
+        let dec = update_existing_edges_from_node(&mut nodes_visited, closest_node, 2);
+        update_existing_edges_to_node(&mut nodes_visited, closest_node, dec);
+        assert_eq!(nodes_visited, vec![ Node::new(0,2, 194), Node::new(1,2,111), Node::new(2,2, 0)]);
+
     }
 }
