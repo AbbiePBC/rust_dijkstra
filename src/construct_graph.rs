@@ -37,14 +37,28 @@ pub struct Graph {
 }
 
 impl Graph {
-    pub(crate) fn new(number_of_nodes_: usize, edges_: Vec<Vec<Edge>>) -> Graph {
+    pub(crate) fn new(graph_nodes: Vec<GraphNode>, edges_: Vec<Edge>) -> Graph {
         // return is unnecessary but looks weird to me otherwise to have Graph { Graph {...}}
-        return Graph {
-            number_of_nodes: number_of_nodes_,
-            edges: edges_,
+
+        let num_nodes = graph_nodes.len();
+        let mut vec: Vec<Vec<Edge>> = Vec::with_capacity(num_nodes);
+        for _ in 0..num_nodes {
+            vec.push(Vec::with_capacity(num_nodes));
+        }
+
+        let mut graph = Graph {
+            number_of_nodes: num_nodes,
+            edges: vec,
             routes_to_find: Vec::new(),
-            graph_nodes: Vec::new(),
+            graph_nodes,
         };
+
+
+        for edge in edges_ {
+            graph.update_edge_in_both_directions(edge);
+        }
+
+        return graph;
     }
 
     pub(crate) fn new_from_string(contents: &str) -> Result<Graph, String> {
@@ -54,26 +68,7 @@ impl Graph {
         let num_nodes = graph_nodes.len();
 
         let edges= parse_edges_from_string(&edge_data, &graph_nodes)?;
-
-        let mut vec: Vec<Vec<Edge>> = Vec::with_capacity(num_nodes);
-        for _ in 0..num_nodes {
-            vec.push(Vec::with_capacity(num_nodes));
-        }
-
-        let mut graph = Graph::new(graph_nodes.len(), vec);
-        graph.graph_nodes = graph_nodes;
-
-        for edge in edges {
-            let (start_index, end_index, weight) = edge;
-
-            if start_index == end_index {
-                // self referential edge, discard
-                continue;
-            }
-            let new_edge = Edge::new(start_index, end_index, weight);
-
-            graph.update_edge_in_both_directions(new_edge);
-        }
+        let mut graph = Graph::new(graph_nodes, edges);
 
         let routes: Vec<&str> = routes_to_find.trim().split("\n").collect();
         for route in routes {
@@ -102,13 +97,6 @@ impl Graph {
             }
         }
     }
-    // pub(crate) fn parse_from_string(&mut self, graph_string: &str) -> Result<Graph, String> {
-    //     let (node_data, edge_data, _) = read_input(graph_string.unwrap())?;
-    //     let graph_nodes: Vec<GraphNode> = get_nodes(&node_data)?;
-    //     let mut graph  = construct_graph_from_edges(&graph_nodes, &edge_data)?;
-    //     return Ok(graph);
-    // }
-
     pub(crate) fn update_edge_in_both_directions(&mut self, new_edge: Edge) {
         let new_edge_is_updated = self.update_existing_edge(new_edge);
         // same in reverse, assuming bidirectionality of edges
@@ -160,33 +148,23 @@ mod graph_only_tests {
     use crate::construct_graph::Graph;
     use crate::parse_graph_nodes_from_string;
 
-    fn set_up_tests() -> (String, Graph, Vec<GraphNode>) {
+    fn set_up_tests() -> (String, Graph) {
         let contents =
             "3\nI\nG\nE\n\n4\nI G 167\nI E 158\nG E 45\nI G 17\n\nG E\nE I\n\n".to_string();
-        let expected_graph = Graph::new(
-            3,
-            vec![
-                vec![Edge::new(0, 2, 158), Edge::new(0, 1, 17)],
-                vec![Edge::new(1, 2, 45), Edge::new(1, 0, 17)],
-                vec![Edge::new(2, 0, 158), Edge::new(2, 1, 45)],
-            ],
-        );
-
         let graph_nodes = vec![
             GraphNode::new(0, "I".to_string()),
             GraphNode::new(1, "G".to_string()),
             GraphNode::new(2, "E".to_string()),
         ];
-        return (contents, expected_graph, graph_nodes);
+        let expected_graph = Graph::new(
+            graph_nodes,
+            vec![
+                Edge::new(0, 2, 158), Edge::new(0, 1, 17), Edge::new(1, 2, 45)]
+        );
+
+
+        return (contents, expected_graph);
     }
-    //todo: did this test get deleted/heavily modified somewhere?
-    // #[test]
-    // fn test_multiple_start_edges_input() {
-    //     let (contents, expected_graph, _) = set_up_tests();
-    //     let graph = graph.parse_from_string("\n\n");
-    //
-    //     assert_eq!(Ok(expected_graph), graph);
-    // }
     #[test]
     fn test_route_finding_with_incorrect_number_of_nodes() {
         let graph = Graph::new_from_string(

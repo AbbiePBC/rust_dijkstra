@@ -1,4 +1,5 @@
 use log::debug;
+use crate::construct_graph::Edge;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct GraphNode {
@@ -63,7 +64,7 @@ pub fn parse_graph_nodes_from_string(node_data: &str) -> Result<Vec<GraphNode>, 
     return Ok(graph_nodes);
 }
 
-pub fn parse_edges_from_string(edge_data: &str, graph_nodes: &Vec<GraphNode>) -> Result<Vec<(usize, usize, usize)>, String> {
+pub fn parse_edges_from_string(edge_data: &str, graph_nodes: &Vec<GraphNode>) -> Result<Vec<Edge>, String> {
     let edges: Vec<&str> = edge_data.split("\n").collect();
     let num_edges: usize = edges[0]
         .parse::<usize>()
@@ -96,7 +97,11 @@ pub fn parse_edges_from_string(edge_data: &str, graph_nodes: &Vec<GraphNode>) ->
 
         let start_index = get_node_index_from_node_name(start_edge, graph_nodes)?;
         let end_index = get_node_index_from_node_name(end_edge, graph_nodes)?;
-        useful_edges.push((start_index, end_index, edge_weight));
+
+        if start_index != end_index {
+            useful_edges.push( Edge::new(start_index, end_index, edge_weight));
+        }
+
     }
 
 
