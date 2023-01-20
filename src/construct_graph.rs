@@ -148,23 +148,6 @@ mod graph_only_tests {
     use crate::construct_graph::Graph;
     use crate::parse_graph_nodes_from_string;
 
-    fn set_up_tests() -> (String, Graph) {
-        let contents =
-            "3\nI\nG\nE\n\n4\nI G 167\nI E 158\nG E 45\nI G 17\n\nG E\nE I\n\n".to_string();
-        let graph_nodes = vec![
-            GraphNode::new(0, "I".to_string()),
-            GraphNode::new(1, "G".to_string()),
-            GraphNode::new(2, "E".to_string()),
-        ];
-        let expected_graph = Graph::new(
-            graph_nodes,
-            vec![
-                Edge::new(0, 2, 158), Edge::new(0, 1, 17), Edge::new(1, 2, 45)]
-        );
-
-
-        return (contents, expected_graph);
-    }
     #[test]
     fn test_route_finding_with_incorrect_number_of_nodes() {
         let graph = Graph::new_from_string(
