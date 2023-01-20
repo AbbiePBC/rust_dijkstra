@@ -116,7 +116,6 @@ pub fn parse_routes_from_string(
     routes_to_find: &str,
     graph_nodes: &Vec<GraphNode>,
 ) -> Result<Vec<(usize, usize)>, String> {
-
     let routes: Vec<&str> = routes_to_find.trim().split("\n").collect();
     let mut parsed_routes = Vec::with_capacity(4);
     for route in routes {

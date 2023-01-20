@@ -28,6 +28,8 @@ or using a custom enum instead of Result would convey the different error cases 
 //edit: now, main->find_path, construct_graph, parse_input; find_path->construct_graph, parse_input; construct_graph->parse_input.
 [ ] dijkstra_from_file(<path>) would be nice
 [ ] dijkstra fn requires knowledge of the graph idx for start and end
+[ ] struct PathFinding { graph: Graph, route: vec<(usize, usize)>, edges_to_traverse, nodes_visited) }
+with current implementation, need separate PathFinding structs for each route, bc graph.edges can be updated with is_traversed
 
 # Bug fix!
 [x] After fixing the bug in which the total dist from the start node was added rather than of an edge
@@ -39,7 +41,7 @@ This can be fixed by storing in nodes_visited all possible paths to nodes, and c
 Route travelled: London->Birmingham->Manchester->York->Newcastle->Edinburgh->Inverness, with distance 604 (London->York->Newcastle->Edinburgh->Inverness 541) / 573?
 ^ this one still fails.
 194 + 82 + 107 + 158
-111 + 81 + 214 + 167 (London->Birmingham->Manchester->Glasgow->Inverness,)
+111 + 81 + 214 + 167 (London->Birmingham->Manchester->Glasgow->Inverness)
 
 
 # Other
