@@ -1,4 +1,7 @@
-use crate::parse_input::{parse_edges_from_string, parse_route_from_string, GraphNode, parse_graph_nodes_from_string, split_contents_into_nodes_edges_routes};
+use crate::parse_input::{
+    parse_edges_from_string, parse_graph_nodes_from_string, parse_route_from_string,
+    split_contents_into_nodes_edges_routes, GraphNode,
+};
 pub const INFINITE_DIST: usize = 100000000;
 
 use log::debug;
@@ -53,7 +56,6 @@ impl Graph {
             graph_nodes,
         };
 
-
         for edge in edges_ {
             graph.update_edge_in_both_directions(edge);
         }
@@ -62,12 +64,13 @@ impl Graph {
     }
 
     pub(crate) fn new_from_string(contents: &str) -> Result<Graph, String> {
-        let (node_data, edge_data, routes_to_find) = split_contents_into_nodes_edges_routes(contents.to_string())?;
+        let (node_data, edge_data, routes_to_find) =
+            split_contents_into_nodes_edges_routes(contents.to_string())?;
 
         let graph_nodes = parse_graph_nodes_from_string(&node_data)?;
         let num_nodes = graph_nodes.len();
 
-        let edges= parse_edges_from_string(&edge_data, &graph_nodes)?;
+        let edges = parse_edges_from_string(&edge_data, &graph_nodes)?;
         let mut graph = Graph::new(graph_nodes, edges);
 
         let routes: Vec<&str> = routes_to_find.trim().split("\n").collect();
@@ -84,11 +87,10 @@ impl Graph {
             //debug!("e  - {:?}",e);
             if e.index_second == node.index && e.index_first == node.parent_idx {
                 e.is_traversed = true;
-                println!("marked edge as traversed  - {:?}",e);
+                println!("marked edge as traversed  - {:?}", e);
                 break;
             }
         }
-
     }
     pub(crate) fn mark_all_edges_as_not_traversed(&mut self) {
         for node_idx in self.edges.iter_mut() {

@@ -5,7 +5,6 @@ use crate::construct_graph::*;
 use crate::parse_input::*;
 use std::fs;
 
-
 fn get_route_travelled(
     original_start_idx: usize,
     end_idx: usize,
@@ -54,16 +53,14 @@ pub fn print_route(route: Vec<String>) -> String {
     return final_path;
 }
 
-fn find_shortest_untraversed_path(
-    edges_can_traverse: &mut Vec<Edge>,
-) -> Edge {
+fn find_shortest_untraversed_path(edges_can_traverse: &mut Vec<Edge>) -> Edge {
     let mut min_weight = INFINITE_DIST;
-    let mut idx_edge= 0;
+    let mut idx_edge = 0;
     println!("edges can traverse - {:?}", edges_can_traverse);
 
     for idx in 0..edges_can_traverse.len() {
         if edges_can_traverse[idx].weight < min_weight && !edges_can_traverse[idx].is_traversed {
-            min_weight = edges_can_traverse[idx].weight ;
+            min_weight = edges_can_traverse[idx].weight;
             idx_edge = idx;
         }
     }
@@ -73,8 +70,11 @@ fn find_shortest_untraversed_path(
     return edge_to_travel;
 }
 
-fn update_existing_edges_from_node(nodes_visited: &mut Vec<Node>, closest_node: Node, original_start_idx: usize) -> usize {
-
+fn update_existing_edges_from_node(
+    nodes_visited: &mut Vec<Node>,
+    closest_node: Node,
+    original_start_idx: usize,
+) -> usize {
     let node_in_current_path = nodes_visited[closest_node.index];
 
     let node_visited_already = nodes_visited
@@ -86,7 +86,8 @@ fn update_existing_edges_from_node(nodes_visited: &mut Vec<Node>, closest_node: 
             debug!(" we have a path to {:?}", closest_node);
             debug!("comparing node.dist_to_node {} > closest_node.dist_to_node {}+ node_to_add_to_path.dist_to_node {}", node.dist_to_node, closest_node.dist_to_node, node_in_current_path.dist_to_node);
             if node_in_current_path.dist_to_node > node.dist_to_node + closest_node.dist_to_node {
-                let decrease_in_dist = node_in_current_path.dist_to_node - (node.dist_to_node + closest_node.dist_to_node);
+                let decrease_in_dist = node_in_current_path.dist_to_node
+                    - (node.dist_to_node + closest_node.dist_to_node);
                 nodes_visited[closest_node.index] = Node::new(
                     closest_node.index,
                     node.index,
@@ -99,27 +100,38 @@ fn update_existing_edges_from_node(nodes_visited: &mut Vec<Node>, closest_node: 
             }
         }
         None => {
-                //return nodes_visited[closest_node.parent_idx].dist_to_node - closest_node.dist_to_node;
+            //return nodes_visited[closest_node.parent_idx].dist_to_node - closest_node.dist_to_node;
             //
         }
     }
     return 0;
 }
 
-fn update_existing_edges_to_node(mut nodes_visited: &mut Vec<Node>, closest_node: Node,  decrease_in_dist: usize) {
+fn update_existing_edges_to_node(
+    mut nodes_visited: &mut Vec<Node>,
+    closest_node: Node,
+    decrease_in_dist: usize,
+) {
     let cp = nodes_visited.clone();
     for mut node in cp {
         // because node is not mutable (yet), overwrite Node
-        if node.parent_idx == closest_node.index && node.dist_to_node != 0  {
-            nodes_visited[node.index] = Node::new(node.index,  node.parent_idx, nodes_visited[node.index].dist_to_node - decrease_in_dist);
+        if node.parent_idx == closest_node.index && node.dist_to_node != 0 {
+            nodes_visited[node.index] = Node::new(
+                node.index,
+                node.parent_idx,
+                nodes_visited[node.index].dist_to_node - decrease_in_dist,
+            );
             let x = nodes_visited.clone(); // todo: this is to make the debugger work - can remove when done
-            update_existing_edges_to_node(nodes_visited, nodes_visited[node.index],  decrease_in_dist);
+            update_existing_edges_to_node(
+                nodes_visited,
+                nodes_visited[node.index],
+                decrease_in_dist,
+            );
             return;
         }
     }
     return;
 }
-
 
 fn node_to_add(
     edges_can_traverse: &mut Vec<Edge>,
@@ -135,7 +147,6 @@ fn node_to_add(
 
     return closest_node;
 }
-
 
 pub fn dijkstra(
     mut original_start_idx: usize,
@@ -169,8 +180,7 @@ pub fn dijkstra(
                 look_for_node = false;
             }
         } else {
-            let closest_node =
-                node_to_add(&mut edges_can_traverse, &mut nodes_visited, graph);
+            let closest_node = node_to_add(&mut edges_can_traverse, &mut nodes_visited, graph);
 
             match nodes_visited
                 .iter()
@@ -184,15 +194,21 @@ pub fn dijkstra(
                         nodes_visited[closest_node.parent_idx].dist_to_node
                             + closest_node.dist_to_node,
                     );
-
                 }
                 Some(node) => {
                     if closest_node.dist_to_node != INFINITE_DIST {
-                        let dist_dec = update_existing_edges_from_node(&mut nodes_visited, closest_node, original_start_idx);
-                        if dist_dec!= 0 {
-                            update_existing_edges_to_node(&mut nodes_visited, closest_node, dist_dec);
+                        let dist_dec = update_existing_edges_from_node(
+                            &mut nodes_visited,
+                            closest_node,
+                            original_start_idx,
+                        );
+                        if dist_dec != 0 {
+                            update_existing_edges_to_node(
+                                &mut nodes_visited,
+                                closest_node,
+                                dist_dec,
+                            );
                         }
-
                     }
                 }
             }
@@ -204,7 +220,7 @@ pub fn dijkstra(
         get_route_travelled(original_start_idx, current_idx, &nodes_visited)
     );
 
-    let (nodes_in_order,_) = get_route_travelled(original_start_idx, end_idx, &nodes_visited);
+    let (nodes_in_order, _) = get_route_travelled(original_start_idx, end_idx, &nodes_visited);
 
     return Ok((nodes_visited[end_idx].dist_to_node, nodes_in_order));
 }
@@ -216,13 +232,7 @@ fn add_to_frontier_edges_from_node(
 ) {
     for edge in &graph.edges[start_idx] {
         if !edge.is_traversed && !edges_can_traverse.contains(&edge) {
-            edges_can_traverse.push(
-                Edge::new(
-                    edge.index_first,
-                    edge.index_second,
-                    edge.weight
-                ),
-            );
+            edges_can_traverse.push(Edge::new(edge.index_first, edge.index_second, edge.weight));
         }
     }
 
@@ -238,7 +248,14 @@ mod tests {
     fn test_dijkstra() {
         let start_idx = 0;
         let end_idx = 2;
-        let mut graph = Graph::new(vec![GraphNode::new(0, "node0".to_string()),GraphNode::new(1, "node1".to_string()), GraphNode::new(2, "node2".to_string())], vec![Edge::new(0, 1, 2),Edge::new(1, 2, 3)]);
+        let mut graph = Graph::new(
+            vec![
+                GraphNode::new(0, "node0".to_string()),
+                GraphNode::new(1, "node1".to_string()),
+                GraphNode::new(2, "node2".to_string()),
+            ],
+            vec![Edge::new(0, 1, 2), Edge::new(1, 2, 3)],
+        );
 
         let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
         assert_eq!(dist, 5);
@@ -251,7 +268,9 @@ mod tests {
         // this test started failing bc the graph::new from edges doesnt take into account redundancies
         // todo: fix this^
 
-        let mut graph = Graph::new_from_string("3\nA\nB\nC\n\n5\nA B 20\nA B 2\nB A 2\nB C 3\nC B 1\n\nA C").unwrap();
+        let mut graph =
+            Graph::new_from_string("3\nA\nB\nC\n\n5\nA B 20\nA B 2\nB A 2\nB C 3\nC B 1\n\nA C")
+                .unwrap();
 
         let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
         assert_eq!(dist, 3);
@@ -262,7 +281,11 @@ mod tests {
         // assuming bidirectionality, now the edge weight for middle->end should be updated from 3 to 2.
 
         let mut expected_graph = Graph::new(
-            vec![GraphNode::new(0, "node0".to_string()), GraphNode::new(1, "node1".to_string()), GraphNode::new(2, "node2".to_string())],
+            vec![
+                GraphNode::new(0, "node0".to_string()),
+                GraphNode::new(1, "node1".to_string()),
+                GraphNode::new(2, "node2".to_string()),
+            ],
             vec![Edge::new(0, 1, 2), Edge::new(1, 2, 2)],
         );
         let (dist, path) = dijkstra(0, 2, &mut expected_graph).unwrap();
@@ -274,9 +297,20 @@ mod tests {
         let start_idx = 0;
         let end_idx = 4;
         let mut graph = Graph::new(
-            vec![GraphNode::new(0, "node0".to_string()), GraphNode::new(1, "node1".to_string()), GraphNode::new(2, "node2".to_string()), GraphNode::new(3, "node3".to_string()), GraphNode::new(4, "node4".to_string())],
-            vec![Edge::new(0, 1, 10), Edge::new(1, 2, 6),
-                Edge::new(2, 3, 1), Edge::new(3, 1, 9), Edge::new(3, 4, 1)],
+            vec![
+                GraphNode::new(0, "node0".to_string()),
+                GraphNode::new(1, "node1".to_string()),
+                GraphNode::new(2, "node2".to_string()),
+                GraphNode::new(3, "node3".to_string()),
+                GraphNode::new(4, "node4".to_string()),
+            ],
+            vec![
+                Edge::new(0, 1, 10),
+                Edge::new(1, 2, 6),
+                Edge::new(2, 3, 1),
+                Edge::new(3, 1, 9),
+                Edge::new(3, 4, 1),
+            ],
         );
         let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
         assert_eq!(path, vec![0, 1, 2, 3, 4]);
@@ -284,7 +318,7 @@ mod tests {
     }
 
     #[test]
-    fn find_correct_route_in_file()  {
+    fn find_correct_route_in_file() {
         let start_idx = 0;
         let end_idx = 2;
 
@@ -296,7 +330,6 @@ mod tests {
         // todo: remove graph_nodes  as a needed thing here
         // let route = get_human_readable_route(path, &graph_nodes).unwrap();
         // assert_eq!(print_route(route), "Cardiff->Bristol->London".to_string());
-
     }
     #[test]
     fn find_correct_route_in_file_when_shorter_early_edge_is_wrong_path_simple(
@@ -346,14 +379,13 @@ mod tests {
 
         let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon York").unwrap();
         let (dist, path) = dijkstra(7, 2, &mut graph).unwrap();
-        assert_eq!(path, [7, 5,3,2]);
+        assert_eq!(path, [7, 5, 3, 2]);
         assert_eq!(dist, 194 + 82 + 107);
 
         // let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon York").unwrap();
         // let (dist, path) = dijkstra(7, 0, &mut graph).unwrap();
         // assert_eq!(path, [7, 5,3,2,0]);
         // assert_eq!(dist, 194 + 82 + 107 + 158)
-
     }
     #[test]
     fn find_correct_route_in_file_when_shorter_early_edge_is_wrong_path() {
@@ -361,7 +393,7 @@ mod tests {
         let end_idx = 7;
         let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon Inverness").unwrap();
 
-        let (dist, path) = dijkstra( start_idx, end_idx, &mut graph).unwrap();
+        let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
 
         assert_eq!(dist, 541);
         assert_eq!(path, vec![0, 2, 3, 5, 7]);
@@ -369,11 +401,10 @@ mod tests {
         // in opposite direction
         let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon Inverness").unwrap();
 
-        let (dist, path) = dijkstra( end_idx, start_idx, &mut graph).unwrap();
+        let (dist, path) = dijkstra(end_idx, start_idx, &mut graph).unwrap();
 
         assert_eq!(path, vec![7, 5, 3, 2, 0]);
         assert_eq!(dist, 541);
-
     }
     #[test]
     fn find_self_referential_route_in_file() {
@@ -393,40 +424,74 @@ mod tests {
         );
     }
     #[test]
-    fn test_updating_path_simple(){
-
+    fn test_updating_path_simple() {
         //
         // if node.dist_to_node > closest_node.dist_to_node + node_to_add_to_path.dist_to_node {
         //     nodes_visited[closest_node.parent_idx] = Node::new(1000, 1000, 1000);
         let original_start_idx = 0;
-        let mut nodes_visited = vec![Node::new(0, 0, 0), Node::new(1, 0, 100), Node::new(2,0, 300)];
-        let closest_node = Node::new(2,1, 20);
+        let mut nodes_visited = vec![
+            Node::new(0, 0, 0),
+            Node::new(1, 0, 100),
+            Node::new(2, 0, 300),
+        ];
+        let closest_node = Node::new(2, 1, 20);
         update_existing_edges_from_node(&mut nodes_visited, closest_node, original_start_idx);
-        assert_eq!(nodes_visited, vec![Node::new(0, 0, 0), Node::new(1, 0, 100), Node::new(2,1, 120)]);
+        assert_eq!(
+            nodes_visited,
+            vec![
+                Node::new(0, 0, 0),
+                Node::new(1, 0, 100),
+                Node::new(2, 1, 120)
+            ]
+        );
     }
     #[test]
-    fn test_updating_path_repeatedly(){
-
+    fn test_updating_path_repeatedly() {
         let original_start_idx = 0;
-        let mut nodes_visited = vec![Node::new(0, 0, 0), Node::new(1, 0, 300), Node::new(2,1, 400), Node::new(3,2, 500)];
-        let closest_node = Node::new(1,0, 20);
+        let mut nodes_visited = vec![
+            Node::new(0, 0, 0),
+            Node::new(1, 0, 300),
+            Node::new(2, 1, 400),
+            Node::new(3, 2, 500),
+        ];
+        let closest_node = Node::new(1, 0, 20);
         update_existing_edges_from_node(&mut nodes_visited, closest_node, original_start_idx);
         update_existing_edges_to_node(&mut nodes_visited, closest_node, 280);
 
-        assert_eq!(nodes_visited, vec![Node::new(0, 0, 0), Node::new(1, 0, 20), Node::new(2,1, 120), Node::new(3,2, 220)]);
+        assert_eq!(
+            nodes_visited,
+            vec![
+                Node::new(0, 0, 0),
+                Node::new(1, 0, 20),
+                Node::new(2, 1, 120),
+                Node::new(3, 2, 220)
+            ]
+        );
     }
     #[test]
-    fn test_updating_old_path(){
-
+    fn test_updating_old_path() {
         //
         // if node.dist_to_node > closest_node.dist_to_node + node_to_add_to_path.dist_to_node {
         //     nodes_visited[closest_node.parent_idx] = Node::new(1000, 1000, 1000);
         let original_start_idx = 0;
-        let mut nodes_visited = vec![Node::new(0, 0, 0), Node::new(1, 0, 100), Node::new(2,0, 300), Node::new(3,2, 400)];
-        let closest_node = Node::new(2,1, 20);
+        let mut nodes_visited = vec![
+            Node::new(0, 0, 0),
+            Node::new(1, 0, 100),
+            Node::new(2, 0, 300),
+            Node::new(3, 2, 400),
+        ];
+        let closest_node = Node::new(2, 1, 20);
         update_existing_edges_from_node(&mut nodes_visited, closest_node, original_start_idx);
-        update_existing_edges_to_node(&mut nodes_visited, closest_node, 300 - (100+20));
-        assert_eq!(nodes_visited, vec![Node::new(0, 0, 0), Node::new(1, 0, 100), Node::new(2,1, 120), Node::new(3,2, 220)]);
+        update_existing_edges_to_node(&mut nodes_visited, closest_node, 300 - (100 + 20));
+        assert_eq!(
+            nodes_visited,
+            vec![
+                Node::new(0, 0, 0),
+                Node::new(1, 0, 100),
+                Node::new(2, 1, 120),
+                Node::new(3, 2, 220)
+            ]
+        );
         // let closest_node = Node::new(2,1, 10);
         // update_existing_edges_from_node(&mut nodes_visited, closest_node, original_start_idx);
         // update_existing_edges_to_node(&mut nodes_visited, closest_node, 120 - (100+10));
@@ -435,13 +500,23 @@ mod tests {
     }
 
     #[test]
-    fn test_update_path_to_start(){
+    fn test_update_path_to_start() {
         // taken from the london->inverness test failing, but relevant indexes here are -5 for indexing reasons.
-        let mut nodes_visited = vec![Node::new(0,1,240), Node::new(1,2,111),  Node::new(2,2, 0)];
-        let closest_node = Node::new(0,2, 194);
+        let mut nodes_visited = vec![
+            Node::new(0, 1, 240),
+            Node::new(1, 2, 111),
+            Node::new(2, 2, 0),
+        ];
+        let closest_node = Node::new(0, 2, 194);
         let dec = update_existing_edges_from_node(&mut nodes_visited, closest_node, 2);
         update_existing_edges_to_node(&mut nodes_visited, closest_node, dec);
-        assert_eq!(nodes_visited, vec![ Node::new(0,2, 194), Node::new(1,2,111), Node::new(2,2, 0)]);
-
+        assert_eq!(
+            nodes_visited,
+            vec![
+                Node::new(0, 2, 194),
+                Node::new(1, 2, 111),
+                Node::new(2, 2, 0)
+            ]
+        );
     }
 }

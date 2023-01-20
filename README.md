@@ -1,6 +1,6 @@
-## Dijsktra
+## Dijkstra
 
-This program is a simple implementation of Dijsktra's algorithm, for the purposes of learning rust.
+This program is a simple implementation of Dijkstra's algorithm, for the purposes of learning rust.
 The 
 
 ### Required input
