@@ -83,6 +83,7 @@ impl Graph {
         }
         return Ok(graph);
     }
+    // todo now we're doing this twice?
     pub(crate) fn mark_edge_as_traversed(&mut self, node: Node) {
         for e in self.edges[node.parent_idx].iter_mut() {
             //debug!("e  - {:?}",e);

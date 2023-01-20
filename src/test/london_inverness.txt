@@ -22,4 +22,4 @@ York Birmingham 129
 York London 194
 Birmingham London 111
 
-London Newcastle
+London Inverness

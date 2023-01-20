@@ -62,14 +62,12 @@ fn find_closest_node(
     graph: &mut Graph,
 ) -> Edge {
     let mut min_weight = INFINITE_DIST;
-    let mut node_to_remove = Node::new(INFINITE_DIST, INFINITE_DIST, INFINITE_DIST);
     let mut idx_edge= 0;
     //debug!("the starting edges are {:?}", edges_can_traverse);
-    let mut key_to_remove = INFINITE_DIST;
     //todo same as the node idx?
     println!("edges can traverse - {:?}", edges_can_traverse);
     for idx in 0..edges_can_traverse.len() {
-        if edges_can_traverse[idx].weight < min_weight {
+        if edges_can_traverse[idx].weight < min_weight && !edges_can_traverse[idx].is_traversed {
             min_weight = edges_can_traverse[idx].weight ; // + nodes_visited[node.parent_idx].dist_to_node
             idx_edge = idx;
             //debug!("the key {} might be removed, which is node {:?}", key_to_remove, edges_can_traverse[&key_to_remove]);
@@ -77,7 +75,7 @@ fn find_closest_node(
         }
     }
     let edge_to_travel = edges_can_traverse[idx_edge];
-    //debug!("the key {} was removed, which is node {:?}", key_to_remove, edges_can_traverse[&key_to_remove]);
+    println!("now attempting edge = {:?}", edge_to_travel);
     edges_can_traverse.remove(idx_edge);
     return edge_to_travel;
 }
@@ -148,10 +146,15 @@ fn node_to_add(
 
     //debug!("possible nodes to add are: {:?}", edges_can_traverse);
     let edge = find_closest_node(edges_can_traverse, nodes_visited, graph);
+    // for mut e in graph.edges[edge.index_first].iter_mut() {
+    //     if edge.index_second == e.index_second {
+    //         e.is_traversed = true;
+    //     }
+    // }
     //update_existing_edges_to_node(nodes_visited, closest_node);
     // if the node to add is too far away, return soemthing esle?
     let closest_node = Node::new(edge.index_second, edge.index_first, edge.weight);
-
+    graph.mark_edge_as_traversed(closest_node);
     return closest_node;
 }
 
@@ -221,7 +224,7 @@ pub fn dijkstra(
                 Some(node) => {
                     if closest_node.dist_to_node != INFINITE_DIST {
                         let parent = nodes_visited[closest_node.parent_idx];
-                        let dist_dec = update_existing_edges_from_node(&mut nodes_visited, parent, original_start_idx);
+                        let dist_dec = update_existing_edges_from_node(&mut nodes_visited, closest_node, original_start_idx);
                         if dist_dec!= 0 {
                             update_existing_edges_to_node(&mut nodes_visited, closest_node, dist_dec);
                         }
@@ -230,7 +233,7 @@ pub fn dijkstra(
                     }
                 }
             }
-            graph.mark_edge_as_traversed(closest_node);
+            //graph.mark_edge_as_traversed(closest_node);
         }
     }
     debug!(
@@ -249,7 +252,7 @@ fn add_to_frontier_edges_from_node(
     edges_can_traverse: &mut Vec<Edge>,
 ) {
     for edge in &graph.edges[start_idx] {
-        if !edge.is_traversed {
+        if !edge.is_traversed && !edges_can_traverse.contains(&edge) {
             add_to_frontier(edges_can_traverse, &edge);
         }
     }
