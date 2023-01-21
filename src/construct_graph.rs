@@ -1,10 +1,8 @@
 use crate::parse_input::{
-    parse_edges_from_string, parse_graph_nodes_from_string, parse_routes_from_string,
-    split_contents_into_nodes_edges_routes, GraphNode,
+    parse_edges_from_string, parse_graph_nodes_from_string, split_contents_into_nodes_edges_routes,
+    GraphNode,
 };
 pub const INFINITE_DIST: usize = 100000000;
-
-use log::debug;
 
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub(crate) struct Node {
@@ -62,14 +60,11 @@ impl Graph {
     }
 
     pub(crate) fn new_from_string(contents: &str) -> Result<Graph, String> {
-        let (node_data, edge_data, routes_to_find) =
+        let (node_data, edge_data, _) =
             split_contents_into_nodes_edges_routes(contents.to_string())?;
-
         let graph_nodes = parse_graph_nodes_from_string(&node_data)?;
-        let num_nodes = graph_nodes.len();
-
         let edges = parse_edges_from_string(&edge_data, &graph_nodes)?;
-        let mut graph = Graph::new(graph_nodes, edges);
+        let graph = Graph::new(graph_nodes, edges);
 
         return Ok(graph);
     }
@@ -138,9 +133,7 @@ impl Edge {
 
 #[cfg(test)]
 mod graph_only_tests {
-    use super::*;
     use crate::construct_graph::Graph;
-    use crate::parse_graph_nodes_from_string;
 
     #[test]
     fn test_route_finding_with_incorrect_number_of_nodes() {

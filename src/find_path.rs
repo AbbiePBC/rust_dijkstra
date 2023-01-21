@@ -11,6 +11,7 @@ pub(crate) struct PathFinder {
     pub(crate) current_route_finding: usize,
     pub(crate) nodes_visited: Vec<Node>,
     pub(crate) edges_can_traverse: Vec<Edge>,
+    pub(crate) solutions: Vec<String>,
 }
 
 impl PathFinder {
@@ -18,9 +19,16 @@ impl PathFinder {
         let nodes: Vec<Node> = Vec::with_capacity(graph.number_of_nodes);
         let edges: Vec<Edge> = Vec::new();
         let current_route_finding = 0;
-        return PathFinder { graph, routes_to_find, current_route_finding, nodes_visited: vec![], edges_can_traverse: vec![] };
+        let solutions = Vec::with_capacity(routes_to_find.len());
+        return PathFinder {
+            graph,
+            routes_to_find,
+            current_route_finding,
+            nodes_visited: vec![],
+            edges_can_traverse: vec![],
+            solutions,
+        };
     }
-
 
     pub(crate) fn new_from_string(contents: &str) -> Result<PathFinder, String> {
         let mut graph = Graph::new_from_string(contents)?;
@@ -29,10 +37,22 @@ impl PathFinder {
         return Ok(PathFinder::new(graph, routes_to_find));
     }
 
+    pub(crate) fn dijkstra_multiple_routes(&mut self) -> Result<(), String> {
+        while self.current_route_finding <= self.routes_to_find.len() {
+            // todo: parallelise this &learn how to do threading in rust, for loop is slower
+            let (dist, nodes_in_order) = self.dijkstra()?;
+            self.solutions.push(format!(
+                "{}, dist {}",
+                self.human_readable_route(nodes_in_order)?,
+                dist
+            ));
+            self.graph.mark_all_edges_as_not_traversed();
+            self.current_route_finding += 1;
+        }
+        return Ok(());
+    }
 
-    pub fn dijkstra(&mut self,
-    ) -> Result<(usize, Vec<usize>), String> {
-
+    pub fn dijkstra(&mut self) -> Result<(usize, Vec<usize>), String> {
         let original_start_idx = self.routes_to_find[self.current_route_finding].0;
         let end_idx = self.routes_to_find[self.current_route_finding].1;
 
@@ -40,7 +60,8 @@ impl PathFinder {
         let mut parent_idx = current_idx;
 
         for _ in 0..self.graph.graph_nodes.len() {
-            self.nodes_visited.push(Node::new(INFINITE_DIST, INFINITE_DIST, 0));
+            self.nodes_visited
+                .push(Node::new(INFINITE_DIST, INFINITE_DIST, 0));
         }
         self.nodes_visited[current_idx] = Node::new(current_idx, parent_idx, 0);
 
@@ -56,9 +77,11 @@ impl PathFinder {
                     look_for_node = false;
                 }
             } else {
-                let closest_edge = next_edge_to_traverse(&mut self.edges_can_traverse, &mut self.graph);
+                let closest_edge = self.edges_can_traverse.next_edge_to_traverse();
+                self.graph.mark_edge_as_traversed(closest_edge);
                 println!("self.nodes_visited = {:?}", self.nodes_visited);
-                match self.nodes_visited
+                match self
+                    .nodes_visited
                     .iter()
                     .find(|&x| x.index == closest_edge.index_second)
                 {
@@ -67,19 +90,17 @@ impl PathFinder {
                         self.nodes_visited[closest_edge.index_second] = Node::new(
                             closest_edge.index_second,
                             closest_edge.index_first,
-                            self.nodes_visited[closest_edge.index_first].dist_to_node + closest_edge.weight,
+                            self.nodes_visited[closest_edge.index_first].dist_to_node
+                                + closest_edge.weight,
                         );
                     }
                     Some(node) => {
                         if closest_edge.weight != INFINITE_DIST {
-                            let dist_dec = update_path_with_new_edge(
-                                &mut self.nodes_visited,
-                                closest_edge,
-                                original_start_idx,
-                            );
+                            let dist_dec = self
+                                .nodes_visited
+                                .update_path_with_new_edge(closest_edge, original_start_idx);
                             if dist_dec != 0 {
-                                update_paths_through_node(
-                                    &mut self.nodes_visited,
+                                self.nodes_visited.update_paths_through_node(
                                     Node::new(
                                         closest_edge.index_second,
                                         closest_edge.index_first,
@@ -99,18 +120,19 @@ impl PathFinder {
         return Ok((self.nodes_visited[end_idx].dist_to_node, nodes_in_order));
     }
 
-    fn add_to_frontier_edges_from_node(&mut self,
-        edge_start_idx: usize,
-    ) {
+    fn add_to_frontier_edges_from_node(&mut self, edge_start_idx: usize) {
         for edge in &self.graph.edges[edge_start_idx] {
             if !edge.is_traversed && !self.edges_can_traverse.contains(&edge) {
-                self.edges_can_traverse.push(Edge::new(edge.index_first, edge.index_second, edge.weight));
+                self.edges_can_traverse.push(Edge::new(
+                    edge.index_first,
+                    edge.index_second,
+                    edge.weight,
+                ));
             }
         }
     }
 
-    fn get_route_travelled(&self,
-    ) -> Vec<usize> {
+    fn get_route_travelled(&self) -> Vec<usize> {
         //go backwards through the nodes to find the parent node.
         let original_start_idx = self.routes_to_find[self.current_route_finding].0;
         let end_idx = self.routes_to_find[self.current_route_finding].1;
@@ -128,111 +150,106 @@ impl PathFinder {
         return nodes_in_order;
     }
 
-}
-
-
-
-pub fn get_human_readable_route(
-    nodes_in_order: Vec<usize>,
-    graph_nodes: &Vec<GraphNode>,
-) -> Result<Vec<String>, String> {
-    let mut path_travelled: Vec<String> = Vec::new();
-    for node_idx in nodes_in_order {
-        let node = &graph_nodes[node_idx];
-
-        if node.index != node_idx {
-            return Err("Error in the indexing for the route travelled.".to_string());
-        } else {
-            path_travelled.push(node.node_name.to_string());
-        }
-    }
-    return Ok(path_travelled);
-}
-
-pub fn print_route(route: Vec<String>) -> String {
-    let mut final_path: String = route[0].to_string();
-    for i in 1..route.len() {
-        final_path = format!("{}->{}", final_path, route[i]);
-    }
-
-    return final_path;
-}
-
-fn update_path_with_new_edge(
-    nodes_visited: &mut Vec<Node>,
-    closest_edge: Edge,
-    original_start_idx: usize,
-) -> usize {
-    let node_in_current_path = nodes_visited[closest_edge.index_second];
-
-    let node_visited_already = nodes_visited
-        .into_iter()
-        .find(|x| x.index == closest_edge.index_first);
-
-    match node_visited_already {
-        Some(node) => {
-            debug!(" we have a path to {:?}", closest_edge.index_second);
-            debug!("comparing node.dist_to_node {} > closest_node.dist_to_node {}+ node_to_add_to_path.dist_to_node {}", node.dist_to_node, closest_edge.weight, node_in_current_path.dist_to_node);
-            if node_in_current_path.dist_to_node > node.dist_to_node + closest_edge.weight {
-                let decrease_in_dist =
-                    node_in_current_path.dist_to_node - (node.dist_to_node + closest_edge.weight);
-                nodes_visited[closest_edge.index_second] = Node::new(
-                    closest_edge.index_second,
-                    node.index,
-                    closest_edge.weight + node.dist_to_node,
-                );
-                // todo the idea was to update the above rather than replace it.
-                // but now think we want to keep the nodes_visited and not overwrite data
-                return decrease_in_dist;
+    pub fn human_readable_route(&self, nodes_in_order: Vec<usize>) -> Result<String, String> {
+        let mut path_travelled: Vec<String> = Vec::new();
+        for node_idx in nodes_in_order {
+            let node = &self.graph.graph_nodes[node_idx];
+            if node.index != node_idx {
+                return Err("Error in the indexing for the route travelled.".to_string());
+            } else {
+                path_travelled.push(node.node_name.to_string());
             }
         }
-        None => {}
-    }
-    return 0;
-}
-
-fn update_paths_through_node(
-    mut nodes_visited: &mut Vec<Node>,
-    closest_node: Node,
-    decrease_in_dist: usize,
-) {
-    let cp = nodes_visited.clone();
-    for mut node in cp {
-        // because node is not mutable (yet), overwrite Node
-        if node.parent_idx == closest_node.index && node.dist_to_node != 0 {
-            nodes_visited[node.index] = Node::new(
-                node.index,
-                node.parent_idx,
-                nodes_visited[node.index].dist_to_node - decrease_in_dist,
-            );
-            update_paths_through_node(nodes_visited, nodes_visited[node.index], decrease_in_dist);
-            return;
+        let mut final_path: String = path_travelled[0].to_string();
+        for i in 1..path_travelled.len() {
+            final_path = format!("{}->{}", final_path, path_travelled[i]);
         }
+
+        return Ok(final_path);
     }
-    return;
 }
 
-fn next_edge_to_traverse(edges_can_traverse: &mut Vec<Edge>, graph: &mut Graph) -> Edge {
-    let mut min_weight = INFINITE_DIST;
-    let mut idx_edge = 0;
-    println!("edges can traverse - {:?}", edges_can_traverse);
+trait UpdatePath {
+    fn update_path_with_new_edge(&mut self, closest_edge: Edge, original_start_idx: usize)
+        -> usize;
+    fn update_paths_through_node(&mut self, closest_node: Node, decrease_in_dist: usize);
+}
 
-    // todo: keep this in a sorted struct to minimise comparisons
-    for idx in 0..edges_can_traverse.len() {
-        if edges_can_traverse[idx].weight < min_weight {
-            min_weight = edges_can_traverse[idx].weight;
-            idx_edge = idx;
+impl UpdatePath for Vec<Node> {
+    fn update_path_with_new_edge(
+        &mut self,
+        closest_edge: Edge,
+        original_start_idx: usize,
+    ) -> usize {
+        let node_in_current_path = self[closest_edge.index_second];
+
+        let node_visited_already = self
+            .into_iter()
+            .find(|x| x.index == closest_edge.index_first);
+
+        match node_visited_already {
+            Some(node) => {
+                debug!(" we have a path to {:?}", closest_edge.index_second);
+                debug!("comparing node.dist_to_node {} > closest_node.dist_to_node {}+ node_to_add_to_path.dist_to_node {}", node.dist_to_node, closest_edge.weight, node_in_current_path.dist_to_node);
+                if node_in_current_path.dist_to_node > node.dist_to_node + closest_edge.weight {
+                    let decrease_in_dist = node_in_current_path.dist_to_node
+                        - (node.dist_to_node + closest_edge.weight);
+                    self[closest_edge.index_second] = Node::new(
+                        closest_edge.index_second,
+                        node.index,
+                        closest_edge.weight + node.dist_to_node,
+                    );
+                    // todo the idea was to update the above rather than replace it.
+                    // but now think we want to keep the nodes_visited and not overwrite data
+                    return decrease_in_dist;
+                }
+            }
+            None => {}
         }
+        return 0;
     }
-    let edge_to_travel = edges_can_traverse[idx_edge];
-    graph.mark_edge_as_traversed(edge_to_travel);
-    edges_can_traverse.remove(idx_edge);
 
-    return edge_to_travel;
+    fn update_paths_through_node(&mut self, closest_node: Node, decrease_in_dist: usize) {
+        let cp = self.clone();
+        for mut node in cp {
+            // because node is not mutable (yet), overwrite Node
+            if node.parent_idx == closest_node.index && node.dist_to_node != 0 {
+                self[node.index] = Node::new(
+                    node.index,
+                    node.parent_idx,
+                    self[node.index].dist_to_node - decrease_in_dist,
+                );
+                self.update_paths_through_node(self[node.index], decrease_in_dist);
+                return;
+            }
+        }
+        return;
+    }
 }
 
+trait UpdateEdge {
+    fn next_edge_to_traverse(&mut self) -> Edge;
+}
 
+impl UpdateEdge for Vec<Edge> {
+    fn next_edge_to_traverse(&mut self) -> Edge {
+        let mut min_weight = INFINITE_DIST;
+        let mut idx_edge = 0;
+        println!("edges can traverse - {:?}", self);
 
+        // todo: keep this in a sorted struct to minimise comparisons
+        for idx in 0..self.len() {
+            if self[idx].weight < min_weight {
+                min_weight = self[idx].weight;
+                idx_edge = idx;
+            }
+        }
+        let edge_to_travel = self[idx_edge];
+        self.remove(idx_edge);
+
+        return edge_to_travel;
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -257,7 +274,6 @@ mod tests {
     }
     #[test]
     fn test_multiple_start_edges() {
-
         let mut graph =
             Graph::new_from_string("3\nA\nB\nC\n\n5\nA B 20\nA B 2\nB A 2\nB C 3\nC B 1\n\nA C")
                 .unwrap();
@@ -311,7 +327,6 @@ mod tests {
 
     #[test]
     fn find_correct_route_in_file() {
-
         let mut graph = Graph::new_from_string("5\nCardiff\nBristol\nLondon\nYork\nBirmingham\n\n5\nYork London 194\nCardiff Bristol 44\nBristol Birmingham 88\nBristol London 114\nBirmingham London 111\n\nCardiff London").unwrap();
 
         let mut pf = PathFinder::new(graph, vec![(0, 2)]);
@@ -331,7 +346,7 @@ mod tests {
                 .unwrap();
 
         let mut pf = PathFinder::new(graph, vec![(3, 0)]);
-        let (dist, path) = pf.dijkstra().unwrap();;
+        let (dist, path) = pf.dijkstra().unwrap();
 
         assert_eq!(dist, 7);
         assert_eq!(path, vec![3, 2, 0]);
@@ -380,7 +395,6 @@ mod tests {
     }
     #[test]
     fn find_correct_route_in_file_when_shorter_early_edge_is_wrong_path() {
-
         let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon Inverness").unwrap();
 
         let mut pf = PathFinder::new(graph, vec![(0, 7)]);
@@ -433,7 +447,7 @@ mod tests {
             Node::new(2, 0, 300),
         ];
         let closest_edge = Edge::new(1, 2, 20);
-        update_path_with_new_edge(&mut nodes_visited, closest_edge, original_start_idx);
+        nodes_visited.update_path_with_new_edge(closest_edge, original_start_idx);
         assert_eq!(
             nodes_visited,
             vec![
@@ -453,8 +467,8 @@ mod tests {
             Node::new(3, 2, 500),
         ];
         let closest_edge = Edge::new(0, 1, 20);
-        update_path_with_new_edge(&mut nodes_visited, closest_edge, original_start_idx);
-        update_paths_through_node(&mut nodes_visited, Node::new(1, 0, 20), 280);
+        nodes_visited.update_path_with_new_edge(closest_edge, original_start_idx);
+        nodes_visited.update_paths_through_node(Node::new(1, 0, 20), 280);
 
         assert_eq!(
             nodes_visited,
@@ -479,8 +493,8 @@ mod tests {
             Node::new(3, 2, 400),
         ];
         let closest_edge = Edge::new(1, 2, 20);
-        update_path_with_new_edge(&mut nodes_visited, closest_edge, original_start_idx);
-        update_paths_through_node(&mut nodes_visited, Node::new(2, 1, 20), 300 - (100 + 20));
+        nodes_visited.update_path_with_new_edge(closest_edge, original_start_idx);
+        nodes_visited.update_paths_through_node(Node::new(2, 1, 20), 300 - (100 + 20));
         assert_eq!(
             nodes_visited,
             vec![
@@ -491,8 +505,8 @@ mod tests {
             ]
         );
         let closest_edge = Edge::new(1, 2, 10);
-        update_path_with_new_edge(&mut nodes_visited, closest_edge, original_start_idx);
-        update_paths_through_node(&mut nodes_visited, Node::new(2, 1, 10), 120 - (100 + 10));
+        nodes_visited.update_path_with_new_edge(closest_edge, original_start_idx);
+        nodes_visited.update_paths_through_node(Node::new(2, 1, 10), 120 - (100 + 10));
 
         assert_eq!(
             nodes_visited,
@@ -514,8 +528,8 @@ mod tests {
             Node::new(2, 2, 0),
         ];
         let closest_edge = Edge::new(2, 0, 194);
-        let dec = update_path_with_new_edge(&mut nodes_visited, closest_edge, 2);
-        update_paths_through_node(&mut nodes_visited, Node::new(0, 2, 194), dec);
+        let dec = nodes_visited.update_path_with_new_edge(closest_edge, 2);
+        nodes_visited.update_paths_through_node(Node::new(0, 2, 194), dec);
         assert_eq!(
             nodes_visited,
             vec![
