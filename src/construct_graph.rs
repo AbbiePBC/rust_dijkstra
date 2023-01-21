@@ -63,10 +63,8 @@ impl Graph {
     }
     pub(crate) fn mark_edge_as_traversed(&mut self, edge: Edge) {
         for e in self.edges[edge.index_first].iter_mut() {
-            //debug!("e  - {:?}",e);
             if e.index_second == edge.index_second && e.index_first == edge.index_first {
                 e.is_traversed = true;
-                println!("marked edge as traversed  - {:?}", e);
                 break;
             }
         }

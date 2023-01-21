@@ -34,8 +34,7 @@ fn main() -> Result<(), String> {
         }
         Ok(file_path) => {
             let mut path_finder = PathFinder::new_from_string(&file_path)?;
-            path_finder.dijkstra_multiple_routes();
-            println!("solutions: {:?}", path_finder.solutions);
+            path_finder.dijkstra_multiple_routes()?;
         }
     }
 
