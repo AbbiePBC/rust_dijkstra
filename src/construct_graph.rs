@@ -1,6 +1,6 @@
 use crate::parse_input::{
     parse_edges_from_string, parse_graph_nodes_from_string, split_contents_into_nodes_edges_routes,
-    GraphNode,
+    GraphNode, Edge
 };
 pub const INFINITE_DIST: usize = 100000000;
 
@@ -21,13 +21,6 @@ impl Node {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct Edge {
-    pub index_first: usize,
-    pub index_second: usize,
-    pub weight: usize,
-    pub is_traversed: bool,
-}
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Graph {
@@ -68,7 +61,6 @@ impl Graph {
 
         return Ok(graph);
     }
-    // todo now we're doing this twice?
     pub(crate) fn mark_edge_as_traversed(&mut self, edge: Edge) {
         for e in self.edges[edge.index_first].iter_mut() {
             //debug!("e  - {:?}",e);
@@ -120,16 +112,6 @@ impl Graph {
     }
 }
 
-impl Edge {
-    pub(crate) fn new(start_index: usize, end_index: usize, weight: usize) -> Edge {
-        return Edge {
-            index_first: start_index,
-            index_second: end_index,
-            weight,
-            is_traversed: false,
-        };
-    }
-}
 
 #[cfg(test)]
 mod graph_only_tests {

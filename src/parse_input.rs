@@ -1,4 +1,3 @@
-use crate::construct_graph::Edge;
 use log::debug;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -12,6 +11,25 @@ impl GraphNode {
         return GraphNode {
             index: idx_,
             node_name: name_,
+        };
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct Edge {
+    pub index_first: usize,
+    pub index_second: usize,
+    pub weight: usize,
+    pub is_traversed: bool,
+}
+
+impl Edge {
+    pub(crate) fn new(start_index: usize, end_index: usize, weight: usize) -> Edge {
+        return Edge {
+            index_first: start_index,
+            index_second: end_index,
+            weight,
+            is_traversed: false,
         };
     }
 }

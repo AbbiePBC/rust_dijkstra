@@ -16,8 +16,6 @@ pub(crate) struct PathFinder {
 
 impl PathFinder {
     pub(crate) fn new(graph: Graph, routes_to_find: Vec<(usize, usize)>) -> PathFinder {
-        let nodes: Vec<Node> = Vec::with_capacity(graph.number_of_nodes);
-        let edges: Vec<Edge> = Vec::new();
         let current_route_finding = 0;
         let solutions = Vec::with_capacity(routes_to_find.len());
         return PathFinder {
