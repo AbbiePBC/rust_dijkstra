@@ -5,6 +5,25 @@ use crate::construct_graph::*;
 use crate::parse_input::*;
 use std::fs;
 
+pub(crate) struct PathFinder {
+    pub(crate) graph: Graph,
+    pub(crate) routes_to_find: Vec<(usize, usize)>,
+}
+
+impl PathFinder {
+    pub(crate) fn new(graph: Graph, routes_to_find: Vec<(usize, usize)>) -> PathFinder {
+        return PathFinder { graph, routes_to_find };
+    }
+
+
+    pub(crate) fn new_from_string(contents: &str) -> Result<PathFinder, String> {
+        let mut graph = Graph::new_from_string(contents)?;
+        let contents_str = split_contents_into_nodes_edges_routes(contents.to_string())?;
+        let mut routes_to_find = parse_routes_from_string(&contents_str.2, &graph.graph_nodes)?;
+        return Ok(PathFinder::new(graph, routes_to_find));
+    }
+}
+
 fn get_route_travelled(
     original_start_idx: usize,
     end_idx: usize,
@@ -235,8 +254,6 @@ mod tests {
     fn test_multiple_start_edges() {
         let start_idx = 0;
         let end_idx = 2;
-        // this test started failing bc the graph::new from edges doesnt take into account redundancies
-        // todo: fix this^
 
         let mut graph =
             Graph::new_from_string("3\nA\nB\nC\n\n5\nA B 20\nA B 2\nB A 2\nB C 3\nC B 1\n\nA C")

@@ -35,7 +35,6 @@ pub struct Edge {
 pub struct Graph {
     pub number_of_nodes: usize,
     pub edges: Vec<Vec<Edge>>,
-    pub routes_to_find: Vec<(usize, usize)>, /* temp solution to restructure */
     pub graph_nodes: Vec<GraphNode>,
 }
 
@@ -52,7 +51,6 @@ impl Graph {
         let mut graph = Graph {
             number_of_nodes: num_nodes,
             edges: vec,
-            routes_to_find: Vec::new(),
             graph_nodes,
         };
 
