@@ -44,12 +44,11 @@ impl PathFinder {
         }
         self.nodes_visited[current_idx] = Node::new(current_idx, parent_idx, 0);
 
-        let mut edges_can_traverse = Vec::new();
         let mut look_for_node = true;
         while look_for_node {
-            add_to_frontier_edges_from_node(&mut self.graph, current_idx, &mut edges_can_traverse);
+            self.add_to_frontier_edges_from_node(current_idx);
 
-            if edges_can_traverse.is_empty() {
+            if self.edges_can_traverse.is_empty() {
                 if self.nodes_visited.iter().find(|&x| x.index == end_idx) == None {
                     return Err("Are the start and end disconnected? No path found".to_string());
                 } else {
@@ -57,8 +56,8 @@ impl PathFinder {
                     look_for_node = false;
                 }
             } else {
-                let closest_edge = next_edge_to_traverse(&mut edges_can_traverse, &mut self.graph);
-
+                let closest_edge = next_edge_to_traverse(&mut self.edges_can_traverse, &mut self.graph);
+                println!("self.nodes_visited = {:?}", self.nodes_visited);
                 match self.nodes_visited
                     .iter()
                     .find(|&x| x.index == closest_edge.index_second)
@@ -95,31 +94,43 @@ impl PathFinder {
             }
         }
 
-        let nodes_in_order = get_route_travelled(original_start_idx, end_idx, &self.nodes_visited);
+        let nodes_in_order = self.get_route_travelled();
 
         return Ok((self.nodes_visited[end_idx].dist_to_node, nodes_in_order));
     }
-}
 
-fn get_route_travelled(
-    original_start_idx: usize,
-    end_idx: usize,
-    nodes_visited: &Vec<Node>,
-) -> Vec<usize> {
-    //go backwards through the nodes to find the parent node.
-    let mut idx = end_idx;
-    let mut nodes_in_order: Vec<usize> = Vec::new();
-
-    nodes_in_order.push(end_idx);
-    while idx != original_start_idx {
-        idx = nodes_visited[idx].parent_idx;
-        nodes_in_order.push(idx);
+    fn add_to_frontier_edges_from_node(&mut self,
+        edge_start_idx: usize,
+    ) {
+        for edge in &self.graph.edges[edge_start_idx] {
+            if !edge.is_traversed && !self.edges_can_traverse.contains(&edge) {
+                self.edges_can_traverse.push(Edge::new(edge.index_first, edge.index_second, edge.weight));
+            }
+        }
     }
 
-    nodes_in_order.reverse();
+    fn get_route_travelled(&self,
+    ) -> Vec<usize> {
+        //go backwards through the nodes to find the parent node.
+        let original_start_idx = self.routes_to_find[self.current_route_finding].0;
+        let end_idx = self.routes_to_find[self.current_route_finding].1;
+        let mut idx = end_idx;
+        let mut nodes_in_order: Vec<usize> = Vec::new();
 
-    return nodes_in_order;
+        nodes_in_order.push(end_idx);
+        while idx != original_start_idx {
+            idx = self.nodes_visited[idx].parent_idx;
+            nodes_in_order.push(idx);
+        }
+
+        nodes_in_order.reverse();
+
+        return nodes_in_order;
+    }
+
 }
+
+
 
 pub fn get_human_readable_route(
     nodes_in_order: Vec<usize>,
@@ -221,17 +232,7 @@ fn next_edge_to_traverse(edges_can_traverse: &mut Vec<Edge>, graph: &mut Graph) 
 }
 
 
-fn add_to_frontier_edges_from_node(
-    graph: &mut Graph,
-    start_idx: usize,
-    edges_can_traverse: &mut Vec<Edge>,
-) {
-    for edge in &graph.edges[start_idx] {
-        if !edge.is_traversed && !edges_can_traverse.contains(&edge) {
-            edges_can_traverse.push(Edge::new(edge.index_first, edge.index_second, edge.weight));
-        }
-    }
-}
+
 
 #[cfg(test)]
 mod tests {
@@ -286,8 +287,6 @@ mod tests {
     }
     #[test]
     fn find_shortest_path_branches() {
-        let start_idx = 0;
-        let end_idx = 4;
         let mut graph = Graph::new(
             vec![
                 GraphNode::new(0, "node0".to_string()),
@@ -327,10 +326,8 @@ mod tests {
     #[test]
     fn find_correct_route_in_file_when_shorter_early_edge_is_wrong_path_simple(
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let start_idx = 3;
-        let end_idx = 0;
         let mut graph =
-            Graph::new_from_string("4\nA\nB\nC\nD\n\n4\nA B 1\nB D 10\nA C 2\nC D 5\n\nA D")
+            Graph::new_from_string("4\nA\nB\nC\nD\n\n4\nA B 1\nB D 10\nA C 2\nC D 5\n\nD A")
                 .unwrap();
 
         let mut pf = PathFinder::new(graph, vec![(3, 0)]);
