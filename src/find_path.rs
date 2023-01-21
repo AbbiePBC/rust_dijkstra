@@ -8,11 +8,17 @@ use std::fs;
 pub(crate) struct PathFinder {
     pub(crate) graph: Graph,
     pub(crate) routes_to_find: Vec<(usize, usize)>,
+    pub(crate) current_route_finding: usize,
+    pub(crate) nodes_visited: Vec<Node>,
+    pub(crate) edges_can_traverse: Vec<Edge>,
 }
 
 impl PathFinder {
     pub(crate) fn new(graph: Graph, routes_to_find: Vec<(usize, usize)>) -> PathFinder {
-        return PathFinder { graph, routes_to_find };
+        let nodes: Vec<Node> = Vec::with_capacity(graph.number_of_nodes);
+        let edges: Vec<Edge> = Vec::new();
+        let current_route_finding = 0;
+        return PathFinder { graph, routes_to_find, current_route_finding, nodes_visited: vec![], edges_can_traverse: vec![] };
     }
 
 
@@ -21,6 +27,77 @@ impl PathFinder {
         let contents_str = split_contents_into_nodes_edges_routes(contents.to_string())?;
         let mut routes_to_find = parse_routes_from_string(&contents_str.2, &graph.graph_nodes)?;
         return Ok(PathFinder::new(graph, routes_to_find));
+    }
+
+
+    pub fn dijkstra(&mut self,
+    ) -> Result<(usize, Vec<usize>), String> {
+
+        let original_start_idx = self.routes_to_find[self.current_route_finding].0;
+        let end_idx = self.routes_to_find[self.current_route_finding].1;
+
+        let mut current_idx = original_start_idx;
+        let mut parent_idx = current_idx;
+
+        for _ in 0..self.graph.graph_nodes.len() {
+            self.nodes_visited.push(Node::new(INFINITE_DIST, INFINITE_DIST, 0));
+        }
+        self.nodes_visited[current_idx] = Node::new(current_idx, parent_idx, 0);
+
+        let mut edges_can_traverse = Vec::new();
+        let mut look_for_node = true;
+        while look_for_node {
+            add_to_frontier_edges_from_node(&mut self.graph, current_idx, &mut edges_can_traverse);
+
+            if edges_can_traverse.is_empty() {
+                if self.nodes_visited.iter().find(|&x| x.index == end_idx) == None {
+                    return Err("Are the start and end disconnected? No path found".to_string());
+                } else {
+                    debug!("stopped looking for node. edges_can_traverse.is_empty");
+                    look_for_node = false;
+                }
+            } else {
+                let closest_edge = next_edge_to_traverse(&mut edges_can_traverse, &mut self.graph);
+
+                match self.nodes_visited
+                    .iter()
+                    .find(|&x| x.index == closest_edge.index_second)
+                {
+                    None => {
+                        current_idx = closest_edge.index_second;
+                        self.nodes_visited[closest_edge.index_second] = Node::new(
+                            closest_edge.index_second,
+                            closest_edge.index_first,
+                            self.nodes_visited[closest_edge.index_first].dist_to_node + closest_edge.weight,
+                        );
+                    }
+                    Some(node) => {
+                        if closest_edge.weight != INFINITE_DIST {
+                            let dist_dec = update_path_with_new_edge(
+                                &mut self.nodes_visited,
+                                closest_edge,
+                                original_start_idx,
+                            );
+                            if dist_dec != 0 {
+                                update_paths_through_node(
+                                    &mut self.nodes_visited,
+                                    Node::new(
+                                        closest_edge.index_second,
+                                        closest_edge.index_first,
+                                        closest_edge.weight,
+                                    ),
+                                    dist_dec,
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        let nodes_in_order = get_route_travelled(original_start_idx, end_idx, &self.nodes_visited);
+
+        return Ok((self.nodes_visited[end_idx].dist_to_node, nodes_in_order));
     }
 }
 
@@ -143,77 +220,6 @@ fn next_edge_to_traverse(edges_can_traverse: &mut Vec<Edge>, graph: &mut Graph) 
     return edge_to_travel;
 }
 
-pub fn dijkstra(
-    mut original_start_idx: usize,
-    end_idx: usize,
-    graph: &mut Graph,
-) -> Result<(usize, Vec<usize>), String> {
-    let mut current_idx = original_start_idx;
-    let mut parent_idx = current_idx;
-
-    let number_of_nodes = graph.number_of_nodes;
-    let mut nodes_visited: Vec<Node> = Vec::with_capacity(number_of_nodes);
-
-    for _ in 0..number_of_nodes {
-        nodes_visited.push(Node::new(INFINITE_DIST, INFINITE_DIST, 0));
-    }
-    nodes_visited[current_idx] = Node::new(current_idx, parent_idx, 0);
-
-    let mut edges_can_traverse = Vec::new();
-    let mut look_for_node = true;
-    while look_for_node {
-        add_to_frontier_edges_from_node(graph, current_idx, &mut edges_can_traverse);
-
-        if edges_can_traverse.is_empty() {
-            if nodes_visited.iter().find(|&x| x.index == end_idx) == None {
-                return Err("Are the start and end disconnected? No path found".to_string());
-            } else {
-                debug!("stopped looking for node. edges_can_traverse.is_empty");
-                look_for_node = false;
-            }
-        } else {
-            let closest_edge = next_edge_to_traverse(&mut edges_can_traverse, graph);
-
-            match nodes_visited
-                .iter()
-                .find(|&x| x.index == closest_edge.index_second)
-            {
-                None => {
-                    current_idx = closest_edge.index_second;
-                    nodes_visited[closest_edge.index_second] = Node::new(
-                        closest_edge.index_second,
-                        closest_edge.index_first,
-                        nodes_visited[closest_edge.index_first].dist_to_node + closest_edge.weight,
-                    );
-                }
-                Some(node) => {
-                    if closest_edge.weight != INFINITE_DIST {
-                        let dist_dec = update_path_with_new_edge(
-                            &mut nodes_visited,
-                            closest_edge,
-                            original_start_idx,
-                        );
-                        if dist_dec != 0 {
-                            update_paths_through_node(
-                                &mut nodes_visited,
-                                Node::new(
-                                    closest_edge.index_second,
-                                    closest_edge.index_first,
-                                    closest_edge.weight,
-                                ),
-                                dist_dec,
-                            );
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    let nodes_in_order = get_route_travelled(original_start_idx, end_idx, &nodes_visited);
-
-    return Ok((nodes_visited[end_idx].dist_to_node, nodes_in_order));
-}
 
 fn add_to_frontier_edges_from_node(
     graph: &mut Graph,
@@ -235,8 +241,6 @@ mod tests {
 
     #[test]
     fn test_dijkstra() {
-        let start_idx = 0;
-        let end_idx = 2;
         let mut graph = Graph::new(
             vec![
                 GraphNode::new(0, "node0".to_string()),
@@ -245,21 +249,20 @@ mod tests {
             ],
             vec![Edge::new(0, 1, 2), Edge::new(1, 2, 3)],
         );
-
-        let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
+        let mut pf = PathFinder::new(graph, vec![(0, 2)]);
+        let (dist, path) = pf.dijkstra().unwrap();
         assert_eq!(dist, 5);
         assert_eq!(path, vec![0, 1, 2]);
     }
     #[test]
     fn test_multiple_start_edges() {
-        let start_idx = 0;
-        let end_idx = 2;
 
         let mut graph =
             Graph::new_from_string("3\nA\nB\nC\n\n5\nA B 20\nA B 2\nB A 2\nB C 3\nC B 1\n\nA C")
                 .unwrap();
 
-        let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
+        let mut pf = PathFinder::new(graph, vec![(0, 2)]);
+        let (dist, path) = pf.dijkstra().unwrap();
         assert_eq!(dist, 3);
         assert_eq!(path, vec![0, 1, 2]);
     }
@@ -267,7 +270,7 @@ mod tests {
     fn test_shorter_initial_route_gets_updated() {
         // assuming bidirectionality, now the edge weight for middle->end should be updated from 3 to 2.
 
-        let mut expected_graph = Graph::new(
+        let mut graph = Graph::new(
             vec![
                 GraphNode::new(0, "node0".to_string()),
                 GraphNode::new(1, "node1".to_string()),
@@ -275,7 +278,9 @@ mod tests {
             ],
             vec![Edge::new(0, 1, 2), Edge::new(1, 2, 2)],
         );
-        let (dist, path) = dijkstra(0, 2, &mut expected_graph).unwrap();
+
+        let mut pf = PathFinder::new(graph, vec![(0, 2)]);
+        let (dist, path) = pf.dijkstra().unwrap();
         assert_eq!(dist, 4);
         assert_eq!(path, vec![0, 1, 2])
     }
@@ -299,18 +304,19 @@ mod tests {
                 Edge::new(3, 4, 1),
             ],
         );
-        let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
+        let mut pf = PathFinder::new(graph, vec![(0, 4)]);
+        let (dist, path) = pf.dijkstra().unwrap();
         assert_eq!(path, vec![0, 1, 2, 3, 4]);
         assert_eq!(dist, 18);
     }
 
     #[test]
     fn find_correct_route_in_file() {
-        let start_idx = 0;
-        let end_idx = 2;
 
         let mut graph = Graph::new_from_string("5\nCardiff\nBristol\nLondon\nYork\nBirmingham\n\n5\nYork London 194\nCardiff Bristol 44\nBristol Birmingham 88\nBristol London 114\nBirmingham London 111\n\nCardiff London").unwrap();
-        let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
+
+        let mut pf = PathFinder::new(graph, vec![(0, 2)]);
+        let (dist, path) = pf.dijkstra().unwrap();
         // the edge 2->1 is marked as traversed ever though it doesn't get selected as the closest node
         //assert_eq!(dist, 158);
         assert_eq!(path, vec![0, 1, 2]);
@@ -327,7 +333,8 @@ mod tests {
             Graph::new_from_string("4\nA\nB\nC\nD\n\n4\nA B 1\nB D 10\nA C 2\nC D 5\n\nA D")
                 .unwrap();
 
-        let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
+        let mut pf = PathFinder::new(graph, vec![(3, 0)]);
+        let (dist, path) = pf.dijkstra().unwrap();;
 
         assert_eq!(dist, 7);
         assert_eq!(path, vec![3, 2, 0]);
@@ -364,8 +371,8 @@ mod tests {
         // assert_eq!(path, [5,3,2,0]);
         // assert_eq!(dist, 82 + 107 + 158);
 
-        let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon York").unwrap();
-        let (dist, path) = dijkstra(7, 2, &mut graph).unwrap();
+        let mut pf = PathFinder::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon Edinburgh").unwrap();
+        let (dist, path) = pf.dijkstra().unwrap();
         assert_eq!(path, [7, 5, 3, 2]);
         assert_eq!(dist, 194 + 82 + 107);
 
@@ -376,11 +383,11 @@ mod tests {
     }
     #[test]
     fn find_correct_route_in_file_when_shorter_early_edge_is_wrong_path() {
-        let start_idx = 0;
-        let end_idx = 7;
+
         let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon Inverness").unwrap();
 
-        let (dist, path) = dijkstra(start_idx, end_idx, &mut graph).unwrap();
+        let mut pf = PathFinder::new(graph, vec![(0, 7)]);
+        let (dist, path) = pf.dijkstra().unwrap();
 
         assert_eq!(dist, 541);
         assert_eq!(path, vec![0, 2, 3, 5, 7]);
@@ -388,7 +395,8 @@ mod tests {
         // in opposite direction
         let mut graph = Graph::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon Inverness").unwrap();
 
-        let (dist, path) = dijkstra(end_idx, start_idx, &mut graph).unwrap();
+        let mut pf = PathFinder::new(graph, vec![(7, 0)]);
+        let (dist, path) = pf.dijkstra().unwrap();
 
         assert_eq!(path, vec![7, 5, 3, 2, 0]);
         assert_eq!(dist, 541);
@@ -409,8 +417,10 @@ mod tests {
         let mut graph =
             Graph::new_from_string("4\nA\nB\nC\nD\n\n4\nA B 1\nA B 2\nB C 3\nA C 4\n\nA D")
                 .unwrap();
+
+        let mut pf = PathFinder::new(graph, vec![(0, 3)]);
         assert_eq!(
-            dijkstra(0, 3, &mut graph),
+            pf.dijkstra(),
             Err("Are the start and end disconnected? No path found".to_string())
         );
     }
