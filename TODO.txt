@@ -11,7 +11,7 @@
 [x] rename reverse_sort() lol
 [ ] keep edges_can_traverse in a sorted struct to minimise comparisons
 [ ] update nodes/edges rather than replace them
-
+[ ] remove unused variables
 
 # Design comments
 [x] group the parsing functions under a module, and put that under the graph module,
