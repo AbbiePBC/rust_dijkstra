@@ -1,6 +1,6 @@
 use crate::parse_input::{
     parse_edges_from_string, parse_graph_nodes_from_string, split_contents_into_nodes_edges_routes,
-    GraphNode, Edge
+    Edge, GraphNode,
 };
 pub const INFINITE_DIST: usize = 100000000;
 
@@ -20,7 +20,6 @@ impl Node {
         };
     }
 }
-
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Graph {
@@ -109,7 +108,6 @@ impl Graph {
         return edge_was_updated;
     }
 }
-
 
 #[cfg(test)]
 mod graph_only_tests {

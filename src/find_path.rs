@@ -1,9 +1,7 @@
 use log::debug;
-use std::collections::btree_map::BTreeMap;
 
 use crate::construct_graph::*;
 use crate::parse_input::*;
-use std::fs;
 
 pub(crate) struct PathFinder {
     pub(crate) graph: Graph,
@@ -29,9 +27,9 @@ impl PathFinder {
     }
 
     pub(crate) fn new_from_string(contents: &str) -> Result<PathFinder, String> {
-        let mut graph = Graph::new_from_string(contents)?;
+        let graph = Graph::new_from_string(contents)?;
         let contents_str = split_contents_into_nodes_edges_routes(contents.to_string())?;
-        let mut routes_to_find = parse_routes_from_string(&contents_str.2, &graph.graph_nodes)?;
+        let routes_to_find = parse_routes_from_string(&contents_str.2, &graph.graph_nodes)?;
         return Ok(PathFinder::new(graph, routes_to_find));
     }
 
@@ -55,7 +53,7 @@ impl PathFinder {
         let end_idx = self.routes_to_find[self.current_route_finding].1;
 
         let mut current_idx = original_start_idx;
-        let mut parent_idx = current_idx;
+        let parent_idx = current_idx;
 
         for _ in 0..self.graph.graph_nodes.len() {
             self.nodes_visited
@@ -91,11 +89,10 @@ impl PathFinder {
                                 + closest_edge.weight,
                         );
                     }
-                    Some(node) => {
+                    Some(_) => {
                         if closest_edge.weight != INFINITE_DIST {
-                            let dist_dec = self
-                                .nodes_visited
-                                .update_path_with_new_edge(closest_edge, original_start_idx);
+                            let dist_dec =
+                                self.nodes_visited.update_path_with_new_edge(closest_edge);
                             if dist_dec != 0 {
                                 self.nodes_visited.update_paths_through_node(
                                     Node::new(
@@ -105,7 +102,6 @@ impl PathFinder {
                                     ),
                                     dist_dec,
                                 );
-
                             }
                         }
                     }
@@ -168,17 +164,12 @@ impl PathFinder {
 }
 
 trait UpdatePath {
-    fn update_path_with_new_edge(&mut self, closest_edge: Edge, original_start_idx: usize)
-        -> usize;
+    fn update_path_with_new_edge(&mut self, closest_edge: Edge) -> usize;
     fn update_paths_through_node(&mut self, closest_node: Node, decrease_in_dist: usize);
 }
 
 impl UpdatePath for Vec<Node> {
-    fn update_path_with_new_edge(
-        &mut self,
-        closest_edge: Edge,
-        original_start_idx: usize,
-    ) -> usize {
+    fn update_path_with_new_edge(&mut self, closest_edge: Edge) -> usize {
         let node_in_current_path = self[closest_edge.index_second];
 
         let node_visited_already = self
@@ -207,7 +198,7 @@ impl UpdatePath for Vec<Node> {
 
     fn update_paths_through_node(&mut self, closest_node: Node, decrease_in_dist: usize) {
         let cp = self.clone();
-        for mut node in cp {
+        for node in cp {
             // because node is not mutable (yet), overwrite Node
             if node.parent_idx == closest_node.index && node.dist_to_node != 0 {
                 self[node.index] = Node::new(
@@ -248,12 +239,10 @@ impl UpdateEdge for Vec<Edge> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::parse_input;
-    use log::info;
 
     #[test]
     fn test_dijkstra() {
-        let mut graph = Graph::new(
+        let graph = Graph::new(
             vec![
                 GraphNode::new(0, "node0".to_string()),
                 GraphNode::new(1, "node1".to_string()),
@@ -268,7 +257,7 @@ mod tests {
     }
     #[test]
     fn test_multiple_start_edges() {
-        let mut graph =
+        let graph =
             Graph::new_from_string("3\nA\nB\nC\n\n5\nA B 20\nA B 2\nB A 2\nB C 3\nC B 1\n\nA C")
                 .unwrap();
 
@@ -281,7 +270,7 @@ mod tests {
     fn test_shorter_initial_route_gets_updated() {
         // assuming bidirectionality, now the edge weight for middle->end should be updated from 3 to 2.
 
-        let mut graph = Graph::new(
+        let graph = Graph::new(
             vec![
                 GraphNode::new(0, "node0".to_string()),
                 GraphNode::new(1, "node1".to_string()),
@@ -297,7 +286,7 @@ mod tests {
     }
     #[test]
     fn find_shortest_path_branches() {
-        let mut graph = Graph::new(
+        let graph = Graph::new(
             vec![
                 GraphNode::new(0, "node0".to_string()),
                 GraphNode::new(1, "node1".to_string()),
@@ -321,7 +310,7 @@ mod tests {
 
     #[test]
     fn find_correct_route_in_file() {
-        let mut graph = Graph::new_from_string("5\nCardiff\nBristol\nLondon\nYork\nBirmingham\n\n5\nYork London 194\nCardiff Bristol 44\nBristol Birmingham 88\nBristol London 114\nBirmingham London 111\n\nCardiff London").unwrap();
+        let graph = Graph::new_from_string("5\nCardiff\nBristol\nLondon\nYork\nBirmingham\n\n5\nYork London 194\nCardiff Bristol 44\nBristol Birmingham 88\nBristol London 114\nBirmingham London 111\n\nCardiff London").unwrap();
 
         let mut pf = PathFinder::new(graph, vec![(0, 2)]);
         let (dist, path) = pf.dijkstra().unwrap();
@@ -329,9 +318,8 @@ mod tests {
         assert_eq!(path, vec![0, 1, 2]);
     }
     #[test]
-    fn find_correct_route_in_file_when_shorter_early_edge_is_wrong_path_simple(
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let mut graph =
+    fn find_correct_route_in_file_when_shorter_early_edge_is_wrong_path_simple() {
+        let graph =
             Graph::new_from_string("4\nA\nB\nC\nD\n\n4\nA B 1\nB D 10\nA C 2\nC D 5\n\nD A")
                 .unwrap();
 
@@ -340,22 +328,20 @@ mod tests {
 
         assert_eq!(dist, 7);
         assert_eq!(path, vec![3, 2, 0]);
-
-        Ok(())
     }
     #[test]
     fn test_shortcuts_updated_correctly() {
-        // if we update L->B->M->Y->N (322) to L->Y->N (276), do we decrease the values properly?
-        // what about for subsequent nodes?
-        let mut pf = PathFinder::new_from_string("6\nL\nB\nM\nN\nY\nE\n\n6\nL B 111\nB M 81\nM Y 65\nY N 82\nL Y 194\nE N 107\n\nL E").unwrap();
+        // if we update L->B->M->Y->N (322) to L->Y->N (276), test that we decrease the values properly
+        let mut pf = PathFinder::new_from_string(
+            "6\nL\nB\nM\nN\nY\nE\n\n6\nL B 111\nB M 81\nM Y 65\nY N 82\nL Y 194\nE N 107\n\nL E",
+        )
+        .unwrap();
         let (dist, path) = pf.dijkstra().unwrap();
-        assert_eq!(path, [0,4,3,5]);
-        assert_eq!(dist, 276+107)
-
+        assert_eq!(path, [0, 4, 3, 5]);
+        assert_eq!(dist, 276 + 107)
     }
     #[test]
     fn simplify_below_test() {
-
         let mut pf = PathFinder::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon Edinburgh").unwrap();
         let (dist, path) = pf.dijkstra().unwrap();
         assert_eq!(path, [7, 5, 3, 2]);
@@ -369,15 +355,13 @@ mod tests {
 
         assert_eq!(dist, 194 + 82 + 107);
 
-        let (dist, path) = pf.dijkstra().unwrap();
+        let (_, path) = pf.dijkstra().unwrap();
         assert_eq!(path, [7, 5, 3, 2]);
         assert_eq!(pf.nodes_visited[7].dist_to_node, 0);
         assert_eq!(pf.nodes_visited[5].dist_to_node, 194);
         assert_eq!(pf.nodes_visited[3].index, 3);
         assert_eq!(pf.nodes_visited[3].parent_idx, 5);
         assert_eq!(pf.nodes_visited[3].dist_to_node, 194 + 82);
-
-
     }
     #[test]
     fn find_correct_route_in_file_when_shorter_early_edge_is_wrong_path() {
@@ -391,7 +375,6 @@ mod tests {
         let (dist, path) = pf.dijkstra().unwrap();
         assert_eq!(dist, 541);
         assert_eq!(path, vec![0, 2, 3, 5, 7]);
-
     }
     #[test]
     fn find_self_referential_route_in_file() {
@@ -406,9 +389,8 @@ mod tests {
     }
     #[test]
     fn find_disconnected_route_in_file() {
-        let graph =
-            Graph::new_from_string("4\nA\nB\nC\nD\n\n4\nA B 1\nA B 2\nB C 3\nA C 4\n\nA D")
-                .unwrap();
+        let graph = Graph::new_from_string("4\nA\nB\nC\nD\n\n4\nA B 1\nA B 2\nB C 3\nA C 4\n\nA D")
+            .unwrap();
 
         let mut pf = PathFinder::new(graph, vec![(0, 3)]);
         assert_eq!(
@@ -418,14 +400,13 @@ mod tests {
     }
     #[test]
     fn test_updating_path_simple() {
-        let original_start_idx = 0;
         let mut nodes_visited = vec![
             Node::new(0, 0, 0),
             Node::new(1, 0, 100),
             Node::new(2, 0, 300),
         ];
         let closest_edge = Edge::new(1, 2, 20);
-        nodes_visited.update_path_with_new_edge(closest_edge, original_start_idx);
+        nodes_visited.update_path_with_new_edge(closest_edge);
         assert_eq!(
             nodes_visited,
             vec![
@@ -437,7 +418,6 @@ mod tests {
     }
     #[test]
     fn test_updating_path_repeatedly() {
-        let original_start_idx = 0;
         let mut nodes_visited = vec![
             Node::new(0, 0, 0),
             Node::new(1, 0, 300),
@@ -445,7 +425,7 @@ mod tests {
             Node::new(3, 2, 500),
         ];
         let closest_edge = Edge::new(0, 1, 20);
-        nodes_visited.update_path_with_new_edge(closest_edge, original_start_idx);
+        nodes_visited.update_path_with_new_edge(closest_edge);
         nodes_visited.update_paths_through_node(Node::new(1, 0, 20), 280);
 
         assert_eq!(
@@ -460,10 +440,6 @@ mod tests {
     }
     #[test]
     fn test_updating_old_path() {
-        //
-        // if node.dist_to_node > closest_node.dist_to_node + node_to_add_to_path.dist_to_node {
-        //     nodes_visited[closest_node.parent_idx] = Node::new(1000, 1000, 1000);
-        let original_start_idx = 0;
         let mut nodes_visited = vec![
             Node::new(0, 0, 0),
             Node::new(1, 0, 100),
@@ -471,7 +447,7 @@ mod tests {
             Node::new(3, 2, 400),
         ];
         let closest_edge = Edge::new(1, 2, 20);
-        nodes_visited.update_path_with_new_edge(closest_edge, original_start_idx);
+        nodes_visited.update_path_with_new_edge(closest_edge);
         nodes_visited.update_paths_through_node(Node::new(2, 1, 20), 300 - (100 + 20));
         assert_eq!(
             nodes_visited,
@@ -483,7 +459,7 @@ mod tests {
             ]
         );
         let closest_edge = Edge::new(1, 2, 10);
-        nodes_visited.update_path_with_new_edge(closest_edge, original_start_idx);
+        nodes_visited.update_path_with_new_edge(closest_edge);
         nodes_visited.update_paths_through_node(Node::new(2, 1, 10), 120 - (100 + 10));
 
         assert_eq!(
@@ -506,7 +482,7 @@ mod tests {
             Node::new(2, 2, 0),
         ];
         let closest_edge = Edge::new(2, 0, 194);
-        let dec = nodes_visited.update_path_with_new_edge(closest_edge, 2);
+        let dec = nodes_visited.update_path_with_new_edge(closest_edge);
         nodes_visited.update_paths_through_node(Node::new(0, 2, 194), dec);
         assert_eq!(
             nodes_visited,
@@ -516,7 +492,7 @@ mod tests {
                 Node::new(2, 2, 0)
             ]
         );
-     }
+    }
     #[test]
     fn ensure_last_node_is_updated_correctly() {
         let mut nodes_visited = vec![
@@ -528,27 +504,14 @@ mod tests {
             Node::new(5, 7, 240),
             Node::new(6, 7, 111),
             Node::new(7, 7, 0),
-
-
         ];
         let closest_edge = Edge::new(7, 5, 194);
-        let dec = nodes_visited.update_path_with_new_edge(closest_edge, 0);
+        let dec = nodes_visited.update_path_with_new_edge(closest_edge);
         nodes_visited.update_paths_through_node(Node::new(5, 7, 194), dec);
 
-        assert_eq!(
-            Node::new(5, 7, 194), nodes_visited[5]
-                // Node::new(3, 5, 322),
-                // Node::new(4, 6, 192),
-                // Node::new(5, 7, 240),
-                // Node::new(6, 7, 111),
-                // Node::new(7, 7, 0),
-            //]
-        );
-        assert_eq!(
-            Node::new(2, 3, 383), nodes_visited[2]);
-        assert_eq!(
-            Node::new(0, 2, 541), nodes_visited[0]);
-
+        assert_eq!(Node::new(5, 7, 194), nodes_visited[5]);
+        assert_eq!(Node::new(2, 3, 383), nodes_visited[2]);
+        assert_eq!(Node::new(0, 2, 541), nodes_visited[0]);
     }
 
     #[test]
@@ -556,8 +519,13 @@ mod tests {
         let mut pf = PathFinder::new_from_string("8\nInverness\nGlasgow\nEdinburgh\nNewcastle\nManchester\nYork\nBirmingham\nLondon\n\n12\nInverness Glasgow 167\nInverness Edinburgh 158\nGlasgow Edinburgh 45\nGlasgow Newcastle 145\nGlasgow Manchester 214\nEdinburgh Newcastle 107\nNewcastle York 82\nManchester York 65\nManchester Birmingham 81\nYork Birmingham 129\nYork London 194\nBirmingham London 111\n\nLondon Inverness\nInverness London").unwrap();
 
         pf.dijkstra_multiple_routes().unwrap();
-        assert_eq!(pf.solutions[0], "London->York->Newcastle->Edinburgh->Inverness, dist 541");
-        assert_eq!(pf.solutions[1], "Inverness->Edinburgh->Newcastle->York->London, dist 541");
-
+        assert_eq!(
+            pf.solutions[0],
+            "London->York->Newcastle->Edinburgh->Inverness, dist 541"
+        );
+        assert_eq!(
+            pf.solutions[1],
+            "Inverness->Edinburgh->Newcastle->York->London, dist 541"
+        );
     }
 }
