@@ -1,50 +1,6 @@
 ## TODOs
 
-# Easy things to fix
-[x] in rust, mod should be used instead of include!().
-[x] probably not worth providing names always for format!().
-[x] &str should be used instead of String for read-only strings.
-[x] print path if doesn't exist
-[x] error out if incorrect number of nodes is provided
-[x] use more specific naming rather than get_node()
-[x] test_shorter_initial_route_gets_updated is testing 2 things; use the expected graph instead of the parsed one.
-[x] rename reverse_sort() lol
-[ ] keep edges_can_traverse in a sorted struct to minimise comparisons
-[ ] update nodes/edges rather than replace them
-[ ] remove unused variables
-
-# Design comments
-[x] group the parsing functions under a module, and put that under the graph module,
-and have a single "parse" function that generates a graph from a string.
-Or maybe a constructor Graph::new_from_string(&str) -> Result<Graph>.
-[x] functions like create_new_edge would fit quite nicely as a constructor (static method).
- For example, `impl Edge { pub fn new(...) -> Edge { ... }}`.
-[x] the graph design has redundancy constraint (and Edge e has to be contained in `graph.edges[e.start]`).
-Possibly use Vec<Vec<Weight>> and create functions that return full Edges (with start and end) when needed,
-or builder functions that ask for what the client wants and hide the internal structure.
-For example, `graph.create_new_edge(start, end, weight)` doesn't require the client to know the internal structure nor comply with the consistency constraint.
-[x] In general, code should have modular functions that allow you to test the same without bothering about the full binary,
-capturing stdout, or comparing human-readable strings. Something like `assert_eq!(dijkstra_from_file("src/test/uk.txt"), OK(("Glasgow", "Edinburgh", 45)));`,
-or using a custom enum instead of Result would convey the different error cases more clearly.
-[ ] improve readability of how dijkstra and add_to_frontier functions work.
-[x] if possible, remove cyclic dependency of parse_input and construct_graph
-//edit: now, main->find_path, construct_graph, parse_input; find_path->construct_graph, parse_input; construct_graph->parse_input.
-[x] dijkstra_from_file(<path>) would be nice
-[x] dijkstra fn requires knowledge of the graph idx for start and end
-[x] struct PathFinding { graph: Graph, route: vec<(usize, usize)>, edges_to_traverse, nodes_visited) }
-with current implementation, need separate PathFinding structs for each route, bc graph.edges can be updated with is_traversed
-
-# Bug fix!
-[x] After fixing the bug in which the total dist from the start node was added rather than of an edge
-the results are different
-Route travelled: Cardiff->Bristol->Birmingham->London, with distance 243 (previously Cardiff->Bristol->London 158)
-Route travelled: York->Manchester->Birmingham, with distance 146 (previously York->Birmingham 129)
-[x] There is a bug :( (edit: this was bc I am bad at recursive functions)
-Route travelled: London->Birmingham->Manchester->York->Newcastle->Edinburgh->Inverness, with distance 604 (London->York->Newcastle->Edinburgh->Inverness 541) / 573?
-^ this one still fails.
-194 + 82 + 107 + 158
-111 + 81 + 214 + 167 (London->Birmingham->Manchester->Glasgow->Inverness)
-
-
-# Other
-[] practise using git to rename/squash old commits (e.g. `mend` after a failed amend)
+[ ] improve readability of code
+[ ] improve documentation
+[ ] reduce redundancies
+[ ] a_star
