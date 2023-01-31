@@ -12,6 +12,24 @@ pub(crate) struct PathFinder {
     pub(crate) solutions: Vec<String>,
 }
 
+#[derive(Debug, Clone, PartialEq, Copy)]
+pub(crate) struct Node {
+    pub index: usize,
+    pub parent_idx: usize,
+    pub dist_to_node: usize
+}
+
+impl Node {
+    pub(crate) fn new(index_: usize, parent_idx_: usize, dist_to_node_: usize) -> Node {
+        return Node {
+            index: index_,
+            parent_idx: parent_idx_,
+            dist_to_node: dist_to_node_,
+        };
+    }
+}
+
+
 impl PathFinder {
     pub(crate) fn new(graph: Graph, routes_to_find: Vec<(usize, usize)>) -> PathFinder {
         let current_route_finding = 0;
@@ -28,8 +46,8 @@ impl PathFinder {
 
     pub(crate) fn new_from_string(contents: &str) -> Result<PathFinder, String> {
         let graph = Graph::new_from_string(contents)?;
-        let contents_str = split_contents_into_nodes_edges_routes(contents.to_string())?;
-        let routes_to_find = parse_routes_from_string(&contents_str.2, &graph.graph_nodes)?;
+        let (_,  _ , routes_str) = split_contents_into_nodes_edges_routes(contents.to_string())?;
+        let routes_to_find = parse_routes_from_string(&routes_str, &graph.graph_nodes)?;
         return Ok(PathFinder::new(graph, routes_to_find));
     }
 
@@ -128,11 +146,7 @@ impl PathFinder {
     fn add_to_frontier_edges_from_node(&mut self, edge_start_idx: usize) {
         for edge in &self.graph.edges[edge_start_idx] {
             if !edge.is_traversed && !self.edges_can_traverse.contains(&edge) {
-                self.edges_can_traverse.push(Edge::new(
-                    edge.index_first,
-                    edge.index_second,
-                    edge.weight,
-                ));
+                self.edges_can_traverse.push(*edge);
             }
         }
     }

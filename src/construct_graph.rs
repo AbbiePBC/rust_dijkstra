@@ -4,23 +4,6 @@ use crate::parse_input::{
 };
 pub const INFINITE_DIST: usize = 100000000;
 
-#[derive(Debug, Clone, PartialEq, Copy)]
-pub(crate) struct Node {
-    pub index: usize,
-    pub parent_idx: usize,
-    pub dist_to_node: usize,
-}
-
-impl Node {
-    pub(crate) fn new(index_: usize, parent_idx_: usize, dist_to_node_: usize) -> Node {
-        return Node {
-            index: index_,
-            parent_idx: parent_idx_,
-            dist_to_node: dist_to_node_,
-        };
-    }
-}
-
 #[derive(Debug, PartialEq, Clone)]
 pub struct Graph {
     pub number_of_nodes: usize,
@@ -30,7 +13,6 @@ pub struct Graph {
 
 impl Graph {
     pub(crate) fn new(graph_nodes: Vec<GraphNode>, edges_: Vec<Edge>) -> Graph {
-        // return is unnecessary but looks weird to me otherwise to have Graph { Graph {...}}
 
         let num_nodes = graph_nodes.len();
         let mut vec: Vec<Vec<Edge>> = Vec::with_capacity(num_nodes);
