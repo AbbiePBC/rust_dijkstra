@@ -45,21 +45,60 @@ impl PathFinder {
         }
         return Ok(());
     }
-
-    pub fn dijkstra(&mut self) -> Result<(usize, Vec<usize>), String> {
-        self.graph.mark_all_edges_as_not_traversed();
-        self.nodes_visited = Vec::new();
-        let original_start_idx = self.routes_to_find[self.current_route_finding].0;
-        let end_idx = self.routes_to_find[self.current_route_finding].1;
-
-        let mut current_idx = original_start_idx;
-        let parent_idx = current_idx;
-
-        for _ in 0..self.graph.graph_nodes.len() {
+    pub fn reset_nodes_visited(&mut self) {
+        let number_of_nodes = self.graph.graph_nodes.len();
+        self.nodes_visited = Vec::with_capacity(number_of_nodes);
+        for _ in 0..number_of_nodes {
             self.nodes_visited
                 .push(Node::new(INFINITE_DIST, INFINITE_DIST, 0));
         }
-        self.nodes_visited[current_idx] = Node::new(current_idx, parent_idx, 0);
+    }
+
+    pub fn traverse_shortest_connected_edge(&mut self) -> Option<usize> {
+        // select shortest edge that is connected to the graph.
+        let closest_edge = self.edges_can_traverse.next_edge_to_traverse();
+        self.graph.mark_edge_as_traversed(closest_edge);
+        // if we haven't visited the node that the edge takes us to already,
+        // add the path to the graph, update the path (if needed)
+        match self
+            .nodes_visited
+            .iter()
+            .find(|&x| x.index == closest_edge.index_second)
+        {
+            None => {
+                self.nodes_visited[closest_edge.index_second] = Node::new(
+                    closest_edge.index_second,
+                    closest_edge.index_first,
+                    self.nodes_visited[closest_edge.index_first].dist_to_node + closest_edge.weight,
+                );
+                return Some(closest_edge.index_second);
+            }
+            Some(_) => {
+                let dist_dec = self.nodes_visited.update_path_with_new_edge(closest_edge);
+                if dist_dec != 0 {
+                    self.nodes_visited.update_paths_through_node(
+                        Node::new(
+                            closest_edge.index_second,
+                            closest_edge.index_first,
+                            closest_edge.weight,
+                        ),
+                        dist_dec,
+                    );
+                }
+                return None;
+            }
+        }
+    }
+    pub fn dijkstra(&mut self) -> Result<(usize, Vec<usize>), String> {
+        // reset the graph inside path finder
+        self.graph.mark_all_edges_as_not_traversed();
+        self.reset_nodes_visited();
+
+        let (original_start_idx, end_idx) = self.routes_to_find[self.current_route_finding];
+        let mut current_idx = original_start_idx;
+
+        // current node has no starting point, so parent = itself.
+        self.nodes_visited[current_idx] = Node::new(current_idx, current_idx, 0);
 
         let mut look_for_node = true;
         while look_for_node {
@@ -73,38 +112,10 @@ impl PathFinder {
                     look_for_node = false;
                 }
             } else {
-                let closest_edge = self.edges_can_traverse.next_edge_to_traverse();
-                self.graph.mark_edge_as_traversed(closest_edge);
-                match self
-                    .nodes_visited
-                    .iter()
-                    .find(|&x| x.index == closest_edge.index_second)
-                {
-                    None => {
-                        current_idx = closest_edge.index_second;
-                        self.nodes_visited[closest_edge.index_second] = Node::new(
-                            closest_edge.index_second,
-                            closest_edge.index_first,
-                            self.nodes_visited[closest_edge.index_first].dist_to_node
-                                + closest_edge.weight,
-                        );
-                    }
-                    Some(_) => {
-                        if closest_edge.weight != INFINITE_DIST {
-                            let dist_dec =
-                                self.nodes_visited.update_path_with_new_edge(closest_edge);
-                            if dist_dec != 0 {
-                                self.nodes_visited.update_paths_through_node(
-                                    Node::new(
-                                        closest_edge.index_second,
-                                        closest_edge.index_first,
-                                        closest_edge.weight,
-                                    ),
-                                    dist_dec,
-                                );
-                            }
-                        }
-                    }
+                let new_edge_connected = self.traverse_shortest_connected_edge();
+                if new_edge_connected != None {
+                    current_idx = new_edge_connected
+                        .expect("Expected an edge index to be returned from edge traversal");
                 }
             }
         }
