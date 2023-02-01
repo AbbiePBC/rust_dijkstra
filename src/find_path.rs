@@ -8,6 +8,7 @@ pub(crate) struct PathFinder {
     pub(crate) routes_to_find: Vec<(usize, usize)>,
     pub(crate) current_route_finding: usize,
     pub(crate) nodes_visited: Vec<Node>,
+    pub(crate) current_connections: Vec<Vec<Edge>>,
     pub(crate) edges_can_traverse: Vec<Edge>,
     pub(crate) solutions: Vec<String>,
 }
@@ -30,19 +31,34 @@ impl Node {
 }
 
 
+
 impl PathFinder {
     pub(crate) fn new(graph: Graph, routes_to_find: Vec<(usize, usize)>) -> PathFinder {
+
         let current_route_finding = 0;
         let solutions = Vec::with_capacity(routes_to_find.len());
+
+        let mut initial_connections: Vec<Vec<Edge>> = Vec::with_capacity(graph.number_of_nodes);
+        for _ in 0..graph.number_of_nodes {
+            initial_connections.push(Vec::with_capacity(graph.number_of_nodes));
+        }
+
+
+        for edge in &graph.edges {
+            Self::update_edge_in_both_directions(&mut initial_connections, *edge);
+        }
+
         return PathFinder {
             graph,
             routes_to_find,
             current_route_finding,
             nodes_visited: vec![],
+            current_connections: initial_connections,
             edges_can_traverse: vec![],
             solutions,
         };
     }
+
 
     pub(crate) fn new_from_string(contents: &str) -> Result<PathFinder, String> {
         let graph = Graph::new_from_string(contents)?;
@@ -75,7 +91,7 @@ impl PathFinder {
     pub fn traverse_shortest_connected_edge(&mut self) -> Option<usize> {
         // select shortest edge that is connected to the graph.
         let closest_edge = self.edges_can_traverse.next_edge_to_traverse();
-        self.graph.mark_edge_as_traversed(closest_edge);
+        self.mark_edge_as_traversed(closest_edge);
         // if we haven't visited the node that the edge takes us to already,
         // add the path to the graph, update the path (if needed)
         match self
@@ -107,9 +123,44 @@ impl PathFinder {
             }
         }
     }
+
+    fn update_edge_in_both_directions(current_connections: &mut Vec<Vec<Edge>>, new_edge: Edge) {
+        let new_edge_is_updated = Self::update_existing_edge(current_connections, new_edge);
+        // same in reverse, assuming bidirectionality of edges
+        if new_edge_is_updated {
+            let new_reverse_edge =
+                Edge::new(new_edge.index_second, new_edge.index_first, new_edge.weight);
+            Self::update_existing_edge(current_connections, new_reverse_edge);
+        }
+    }
+
+    fn update_existing_edge(current_connections: &mut Vec<Vec<Edge>>, new_edge: Edge) -> bool {
+        let start_index = new_edge.index_first;
+        let end_index = new_edge.index_second;
+        let new_weight = new_edge.weight;
+        let edge_index = current_connections[start_index]
+            .iter()
+            .position(|x| x.index_second == end_index);
+        let mut edge_was_updated = true;
+        match edge_index {
+            None => {}
+            Some(idx_into_edge_list) => {
+                let old_edge_weight = current_connections[start_index][idx_into_edge_list].weight;
+                if old_edge_weight >= new_weight {
+                    current_connections[start_index].remove(idx_into_edge_list);
+                } else {
+                    edge_was_updated = false;
+                }
+            }
+        }
+        current_connections[start_index].push(new_edge);
+        return edge_was_updated;
+    }
+
+
     pub fn dijkstra(&mut self) -> Result<(usize, Vec<usize>), String> {
         // reset the graph inside path finder
-        self.graph.mark_all_edges_as_not_traversed();
+        self.mark_all_edges_as_not_traversed();
         self.reset_nodes_visited();
 
         let (original_start_idx, end_idx) = self.routes_to_find[self.current_route_finding];
@@ -144,7 +195,7 @@ impl PathFinder {
     }
 
     fn add_to_frontier_edges_from_node(&mut self, edge_start_idx: usize) {
-        for edge in &self.graph.edges[edge_start_idx] {
+        for edge in &self.current_connections[edge_start_idx] {
             if !edge.is_traversed && !self.edges_can_traverse.contains(&edge) {
                 self.edges_can_traverse.push(*edge);
             }
@@ -185,6 +236,22 @@ impl PathFinder {
         }
 
         return Ok(final_path);
+    }
+    pub(crate) fn mark_edge_as_traversed(&mut self, edge: Edge) {
+        for e in self.current_connections[edge.index_first].iter_mut() {
+            if e.index_second == edge.index_second && e.index_first == edge.index_first {
+                e.is_traversed = true;
+                break;
+            }
+        }
+    }
+    pub(crate) fn mark_all_edges_as_not_traversed(&mut self) {
+        // each index into current_connections is a vector of edges to that node
+        for node_idx in self.current_connections.iter_mut() {
+            for edge in node_idx.iter_mut() {
+                edge.is_traversed = false;
+            }
+        }
     }
 }
 

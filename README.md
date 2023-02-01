@@ -32,7 +32,7 @@ start-node end-node
 
 - PathFinder: this contains all the information about the graph, the routes to find, which route is being searched for, and the nodes visited.
 - Graph: this stores the connections between the nodes, and the mapping between node index and the node name
-- Nodes: once nodes have been found, they are stored inside the PathFinder with the parent node, and the distance needed to get there
+- Nodes: once nodes have been found, they are stored inside the PathFinder with information including the parent node, and the distance needed to get to that node from the start-point.
 
 The idea in keeping the nodes separate to the graph creation was that they stored path-only information, whereas the graph information should be constant. 
 In writing the code, this design changed, and the edges stored by the graph are now updated. Therefore, it makes sense now to either:

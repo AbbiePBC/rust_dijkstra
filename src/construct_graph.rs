@@ -7,7 +7,7 @@ pub const INFINITE_DIST: usize = 100000000;
 #[derive(Debug, PartialEq, Clone)]
 pub struct Graph {
     pub number_of_nodes: usize,
-    pub edges: Vec<Vec<Edge>>,
+    pub edges: Vec<Edge>,
     pub graph_nodes: Vec<GraphNode>,
 }
 
@@ -15,20 +15,12 @@ impl Graph {
     pub(crate) fn new(graph_nodes: Vec<GraphNode>, edges_: Vec<Edge>) -> Graph {
 
         let num_nodes = graph_nodes.len();
-        let mut vec: Vec<Vec<Edge>> = Vec::with_capacity(num_nodes);
-        for _ in 0..num_nodes {
-            vec.push(Vec::with_capacity(num_nodes));
-        }
 
-        let mut graph = Graph {
+        let graph = Graph {
             number_of_nodes: num_nodes,
-            edges: vec,
+            edges: edges_,
             graph_nodes,
         };
-
-        for edge in edges_ {
-            graph.update_edge_in_both_directions(edge);
-        }
 
         return graph;
     }
@@ -42,53 +34,7 @@ impl Graph {
 
         return Ok(graph);
     }
-    pub(crate) fn mark_edge_as_traversed(&mut self, edge: Edge) {
-        for e in self.edges[edge.index_first].iter_mut() {
-            if e.index_second == edge.index_second && e.index_first == edge.index_first {
-                e.is_traversed = true;
-                break;
-            }
-        }
-    }
-    pub(crate) fn mark_all_edges_as_not_traversed(&mut self) {
-        for node_idx in self.edges.iter_mut() {
-            for edge in node_idx.iter_mut() {
-                edge.is_traversed = false;
-            }
-        }
-    }
-    pub(crate) fn update_edge_in_both_directions(&mut self, new_edge: Edge) {
-        let new_edge_is_updated = self.update_existing_edge(new_edge);
-        // same in reverse, assuming bidirectionality of edges
-        if new_edge_is_updated {
-            let new_reverse_edge =
-                Edge::new(new_edge.index_second, new_edge.index_first, new_edge.weight);
-            self.update_existing_edge(new_reverse_edge);
-        }
-    }
 
-    pub(crate) fn update_existing_edge(&mut self, new_edge: Edge) -> bool {
-        let start_index = new_edge.index_first;
-        let end_index = new_edge.index_second;
-        let new_weight = new_edge.weight;
-        let edge_index = self.edges[start_index]
-            .iter()
-            .position(|x| x.index_second == end_index);
-        let mut edge_was_updated = true;
-        match edge_index {
-            None => {}
-            Some(idx_into_edge_list) => {
-                let old_edge_weight = self.edges[start_index][idx_into_edge_list].weight;
-                if old_edge_weight >= new_weight {
-                    self.edges[start_index].remove(idx_into_edge_list);
-                } else {
-                    edge_was_updated = false;
-                }
-            }
-        }
-        self.edges[start_index].push(new_edge);
-        return edge_was_updated;
-    }
 }
 
 #[cfg(test)]
