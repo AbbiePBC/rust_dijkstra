@@ -31,19 +31,17 @@ impl Node {
 }
 
 
-
 impl PathFinder {
     pub(crate) fn new(graph: Graph, routes_to_find: Vec<(usize, usize)>) -> PathFinder {
 
         let current_route_finding = 0;
         let solutions = Vec::with_capacity(routes_to_find.len());
 
+        // set initial connections between nodes as the connections in the immutable graph
         let mut initial_connections: Vec<Vec<Edge>> = Vec::with_capacity(graph.number_of_nodes);
         for _ in 0..graph.number_of_nodes {
             initial_connections.push(Vec::with_capacity(graph.number_of_nodes));
         }
-
-
         for edge in &graph.edges {
             Self::update_edge_in_both_directions(&mut initial_connections, *edge);
         }
@@ -59,7 +57,7 @@ impl PathFinder {
         };
     }
 
-
+    /// create the PathFinder struct directly from the problem input
     pub(crate) fn new_from_string(contents: &str) -> Result<PathFinder, String> {
         let graph = Graph::new_from_string(contents)?;
         let (_,  _ , routes_str) = split_contents_into_nodes_edges_routes(contents.to_string())?;
@@ -67,8 +65,44 @@ impl PathFinder {
         return Ok(PathFinder::new(graph, routes_to_find));
     }
 
+    pub fn dijkstra(&mut self) -> Result<(usize, Vec<usize>), String> {
+
+        // ensure the path finder is clean to use
+        // todo: this shouldn't be the concern of the dijkstra fn
+        self.mark_all_edges_as_not_traversed();
+        self.reset_nodes_visited();
+
+        // determine which route to find
+        let (original_start_idx, end_idx) = self.routes_to_find[self.current_route_finding];
+        let mut current_idx = original_start_idx;
+
+        // current node has no starting point, so parent = itself.
+        self.nodes_visited[current_idx] = Node::new(current_idx, current_idx, 0);
+
+        loop {
+            // add all edges that we're connecting to for the first time into consideration for the edges to traverse next
+            self.add_to_frontier_edges_from_node(current_idx);
+
+            if self.edges_can_traverse.is_empty() {
+                if self.nodes_visited.iter().find(|&x| x.index == end_idx) == None {
+                    return Err("Are the start and end disconnected? No path found".to_string());
+                } else {
+                    let nodes_in_order = self.get_route_travelled();
+                    return Ok((self.nodes_visited[end_idx].dist_to_node, nodes_in_order));
+                }
+            }
+            let new_edge_connected = self.traverse_shortest_connected_edge();
+            if new_edge_connected != None {
+                current_idx = new_edge_connected
+                    .expect("Expected an edge index to be returned from edge traversal");
+            }
+        }
+    }
+
+    /// loops through all of the routes to be found to support inputs with multiple routes
     pub(crate) fn dijkstra_multiple_routes(&mut self) -> Result<(), String> {
         while self.current_route_finding < self.routes_to_find.len() {
+
             let (dist, nodes_in_order) = self.dijkstra()?;
             self.solutions.push(format!(
                 "{}, dist {}",
@@ -76,9 +110,12 @@ impl PathFinder {
                 dist
             ));
             self.current_route_finding += 1;
+
         }
         return Ok(());
     }
+
+    /// if we do want to find multiple paths, reset the PathFinder
     pub fn reset_nodes_visited(&mut self) {
         let number_of_nodes = self.graph.graph_nodes.len();
         self.nodes_visited = Vec::with_capacity(number_of_nodes);
@@ -88,17 +125,28 @@ impl PathFinder {
         }
     }
 
+    /// if we do want to find multiple paths, reset the PathFinder
+    pub(crate) fn mark_all_edges_as_not_traversed(&mut self) {
+        // each index into current_connections is a vector of edges to that node
+        for node_idx in self.current_connections.iter_mut() {
+            for edge in node_idx.iter_mut() {
+                edge.is_traversed = false;
+            }
+        }
+    }
+
+    /// select shortest edge that is connected to a node in the tree
     pub fn traverse_shortest_connected_edge(&mut self) -> Option<usize> {
-        // select shortest edge that is connected to the graph.
+
         let closest_edge = self.edges_can_traverse.next_edge_to_traverse();
         self.mark_edge_as_traversed(closest_edge);
-        // if we haven't visited the node that the edge takes us to already,
-        // add the path to the graph, update the path (if needed)
+
         match self
             .nodes_visited
             .iter()
             .find(|&x| x.index == closest_edge.index_second)
         {
+            // if we haven't been to this node before, add the node
             None => {
                 self.nodes_visited[closest_edge.index_second] = Node::new(
                     closest_edge.index_second,
@@ -107,14 +155,19 @@ impl PathFinder {
                 );
                 return Some(closest_edge.index_second);
             }
+            // if we have been to this node before, check if the node has been found with a shorter path
+            // if so, update all routes that used the previous connection to use the new connection
             Some(_) => {
                 let dist_dec = self.nodes_visited.update_path_with_new_edge(closest_edge);
                 if dist_dec != 0 {
+                    // this function recursively updates all nodes that are before the node with an improved connection
+                    // we've already updated the current node, so we don't care about the distance to that node
+                    // and using the Some(node) causes issues with mutability, so disguise an edge as a node
                     self.nodes_visited.update_paths_through_node(
                         Node::new(
                             closest_edge.index_second,
                             closest_edge.index_first,
-                            closest_edge.weight,
+                            INFINITE_DIST,
                         ),
                         dist_dec,
                     );
@@ -134,19 +187,18 @@ impl PathFinder {
         }
     }
 
+    /// if the input has the edge a->b more than once, choose the minimum weight
     fn update_existing_edge(current_connections: &mut Vec<Vec<Edge>>, new_edge: Edge) -> bool {
         let start_index = new_edge.index_first;
-        let end_index = new_edge.index_second;
-        let new_weight = new_edge.weight;
         let edge_index = current_connections[start_index]
             .iter()
-            .position(|x| x.index_second == end_index);
+            .position(|x| x.index_second == new_edge.index_second);
         let mut edge_was_updated = true;
         match edge_index {
             None => {}
             Some(idx_into_edge_list) => {
                 let old_edge_weight = current_connections[start_index][idx_into_edge_list].weight;
-                if old_edge_weight >= new_weight {
+                if old_edge_weight >= new_edge.weight {
                     current_connections[start_index].remove(idx_into_edge_list);
                 } else {
                     edge_was_updated = false;
@@ -157,43 +209,17 @@ impl PathFinder {
         return edge_was_updated;
     }
 
-
-    pub fn dijkstra(&mut self) -> Result<(usize, Vec<usize>), String> {
-        // reset the graph inside path finder
-        self.mark_all_edges_as_not_traversed();
-        self.reset_nodes_visited();
-
-        let (original_start_idx, end_idx) = self.routes_to_find[self.current_route_finding];
-        let mut current_idx = original_start_idx;
-
-        // current node has no starting point, so parent = itself.
-        self.nodes_visited[current_idx] = Node::new(current_idx, current_idx, 0);
-
-        let mut look_for_node = true;
-        while look_for_node {
-            self.add_to_frontier_edges_from_node(current_idx);
-
-            if self.edges_can_traverse.is_empty() {
-                if self.nodes_visited.iter().find(|&x| x.index == end_idx) == None {
-                    return Err("Are the start and end disconnected? No path found".to_string());
-                } else {
-                    debug!("stopped looking for node. edges_can_traverse.is_empty");
-                    look_for_node = false;
-                }
-            } else {
-                let new_edge_connected = self.traverse_shortest_connected_edge();
-                if new_edge_connected != None {
-                    current_idx = new_edge_connected
-                        .expect("Expected an edge index to be returned from edge traversal");
-                }
+    /// mark edge as traversed to avoid traversing the same edge more than once
+    pub(crate) fn mark_edge_as_traversed(&mut self, edge: Edge) {
+        for e in self.current_connections[edge.index_first].iter_mut() {
+            if e.index_second == edge.index_second && e.index_first == edge.index_first {
+                e.is_traversed = true;
+                break;
             }
         }
-
-        let nodes_in_order = self.get_route_travelled();
-
-        return Ok((self.nodes_visited[end_idx].dist_to_node, nodes_in_order));
     }
 
+    /// when adding a previously unconnected node to the tree, all edges from this node now become traversable
     fn add_to_frontier_edges_from_node(&mut self, edge_start_idx: usize) {
         for edge in &self.current_connections[edge_start_idx] {
             if !edge.is_traversed && !self.edges_can_traverse.contains(&edge) {
@@ -202,8 +228,9 @@ impl PathFinder {
         }
     }
 
+    /// go backwards through the nodes to find the parent node.
     fn get_route_travelled(&self) -> Vec<usize> {
-        //go backwards through the nodes to find the parent node.
+
         let original_start_idx = self.routes_to_find[self.current_route_finding].0;
         let end_idx = self.routes_to_find[self.current_route_finding].1;
         let mut idx = end_idx;
@@ -237,22 +264,7 @@ impl PathFinder {
 
         return Ok(final_path);
     }
-    pub(crate) fn mark_edge_as_traversed(&mut self, edge: Edge) {
-        for e in self.current_connections[edge.index_first].iter_mut() {
-            if e.index_second == edge.index_second && e.index_first == edge.index_first {
-                e.is_traversed = true;
-                break;
-            }
-        }
-    }
-    pub(crate) fn mark_all_edges_as_not_traversed(&mut self) {
-        // each index into current_connections is a vector of edges to that node
-        for node_idx in self.current_connections.iter_mut() {
-            for edge in node_idx.iter_mut() {
-                edge.is_traversed = false;
-            }
-        }
-    }
+
 }
 
 trait UpdatePath {
@@ -261,6 +273,8 @@ trait UpdatePath {
 }
 
 impl UpdatePath for Vec<Node> {
+
+    /// if we have a path to a node, but a new edge provides a better one, update the path to that node.
     fn update_path_with_new_edge(&mut self, closest_edge: Edge) -> usize {
         let node_in_current_path = self[closest_edge.index_second];
 
@@ -270,8 +284,6 @@ impl UpdatePath for Vec<Node> {
 
         match node_visited_already {
             Some(node) => {
-                debug!(" we have a path to {:?}", closest_edge.index_second);
-                debug!("comparing node.dist_to_node {} > closest_node.dist_to_node {}+ node_to_add_to_path.dist_to_node {}", node.dist_to_node, closest_edge.weight, node_in_current_path.dist_to_node);
                 if node_in_current_path.dist_to_node > node.dist_to_node + closest_edge.weight {
                     let decrease_in_dist = node_in_current_path.dist_to_node
                         - (node.dist_to_node + closest_edge.weight);
@@ -288,10 +300,11 @@ impl UpdatePath for Vec<Node> {
         return 0;
     }
 
+    /// if we have updated the node's path, update the path of other nodes that will be affected
     fn update_paths_through_node(&mut self, closest_node: Node, decrease_in_dist: usize) {
+        // todo: this copy was because of mutability reasons
         let cp = self.clone();
         for node in cp {
-            // because node is not mutable (yet), overwrite Node
             if node.parent_idx == closest_node.index && node.dist_to_node != 0 {
                 self[node.index] = Node::new(
                     node.index,
