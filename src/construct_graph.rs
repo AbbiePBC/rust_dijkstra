@@ -13,7 +13,6 @@ pub struct Graph {
 
 impl Graph {
     pub(crate) fn new(graph_nodes: Vec<GraphNode>, edges_: Vec<Edge>) -> Graph {
-
         let num_nodes = graph_nodes.len();
 
         let graph = Graph {
@@ -34,7 +33,6 @@ impl Graph {
 
         return Ok(graph);
     }
-
 }
 
 #[cfg(test)]

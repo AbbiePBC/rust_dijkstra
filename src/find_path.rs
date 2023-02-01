@@ -1,5 +1,3 @@
-use log::debug;
-
 use crate::construct_graph::*;
 use crate::parse_input::*;
 
@@ -17,7 +15,7 @@ pub(crate) struct PathFinder {
 pub(crate) struct Node {
     pub index: usize,
     pub parent_idx: usize,
-    pub dist_to_node: usize
+    pub dist_to_node: usize,
 }
 
 impl Node {
@@ -30,10 +28,8 @@ impl Node {
     }
 }
 
-
 impl PathFinder {
     pub(crate) fn new(graph: Graph, routes_to_find: Vec<(usize, usize)>) -> PathFinder {
-
         let current_route_finding = 0;
         let solutions = Vec::with_capacity(routes_to_find.len());
 
@@ -60,13 +56,12 @@ impl PathFinder {
     /// create the PathFinder struct directly from the problem input
     pub(crate) fn new_from_string(contents: &str) -> Result<PathFinder, String> {
         let graph = Graph::new_from_string(contents)?;
-        let (_,  _ , routes_str) = split_contents_into_nodes_edges_routes(contents.to_string())?;
+        let (_, _, routes_str) = split_contents_into_nodes_edges_routes(contents.to_string())?;
         let routes_to_find = parse_routes_from_string(&routes_str, &graph.graph_nodes)?;
         return Ok(PathFinder::new(graph, routes_to_find));
     }
 
     pub fn dijkstra(&mut self) -> Result<(usize, Vec<usize>), String> {
-
         // ensure the path finder is clean to use
         // todo: this shouldn't be the concern of the dijkstra fn
         self.mark_all_edges_as_not_traversed();
@@ -102,7 +97,6 @@ impl PathFinder {
     /// loops through all of the routes to be found to support inputs with multiple routes
     pub(crate) fn dijkstra_multiple_routes(&mut self) -> Result<(), String> {
         while self.current_route_finding < self.routes_to_find.len() {
-
             let (dist, nodes_in_order) = self.dijkstra()?;
             self.solutions.push(format!(
                 "{}, dist {}",
@@ -110,7 +104,6 @@ impl PathFinder {
                 dist
             ));
             self.current_route_finding += 1;
-
         }
         return Ok(());
     }
@@ -137,7 +130,6 @@ impl PathFinder {
 
     /// select shortest edge that is connected to a node in the tree
     pub fn traverse_shortest_connected_edge(&mut self) -> Option<usize> {
-
         let closest_edge = self.edges_can_traverse.next_edge_to_traverse();
         self.mark_edge_as_traversed(closest_edge);
 
@@ -230,7 +222,6 @@ impl PathFinder {
 
     /// go backwards through the nodes to find the parent node.
     fn get_route_travelled(&self) -> Vec<usize> {
-
         let original_start_idx = self.routes_to_find[self.current_route_finding].0;
         let end_idx = self.routes_to_find[self.current_route_finding].1;
         let mut idx = end_idx;
@@ -264,7 +255,6 @@ impl PathFinder {
 
         return Ok(final_path);
     }
-
 }
 
 trait UpdatePath {
@@ -273,7 +263,6 @@ trait UpdatePath {
 }
 
 impl UpdatePath for Vec<Node> {
-
     /// if we have a path to a node, but a new edge provides a better one, update the path to that node.
     fn update_path_with_new_edge(&mut self, closest_edge: Edge) -> usize {
         let node_in_current_path = self[closest_edge.index_second];
